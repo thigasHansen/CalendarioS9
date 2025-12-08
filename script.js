@@ -2,7 +2,7 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
 const supabaseUrl = "https://whrugfiojjbxkzjvtgjs.supabase.co";   // replace with your project URL
-const supabaseKey = "whrugfiojjbxkzjvtgjs";              // replace with your anon key
+const supabaseKey = "sb_publishable_3qJoVWoF-Kfn1n2dAi0RgA_gqT-j5uN";              // replace with your anon key
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // State
