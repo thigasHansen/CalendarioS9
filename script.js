@@ -1,10 +1,10 @@
 // --------- CONFIG ---------
-const SUPABASE_URL = "https://whrugfiojjbxkzjvtgjs.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_3qJoVWoF-Kfn1n2dAi0RgA_gqT-j5uN";
+const supabase_URL = "https://whrugfiojjbxkzjvtgjs.supabase.co";
+const supabase_ANON_KEY = "sb_publishable_3qJoVWoF-Kfn1n2dAi0RgA_gqT-j5uN";
 const BASE_BUDGET = 2000000.00; // R$ 2.000.000,00
 
-// Initialize supabase (UMD global is `supabase`)
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Initialize supabaseClient (UMD global is `supabaseClient`)
+const supabaseClientClient = supabaseClient.createClient(supabaseClient_URL, supabaseClient_ANON_KEY);
 
 // --------- STATE ---------
 let currentYear = new Date().getFullYear();
@@ -47,9 +47,9 @@ function randomColorHex(nameSeed = "") {
   return hslToHex(hue, saturation, lightness);
 }
 
-// --------- SUPABASE DATA ---------
+// --------- supabaseClient DATA ---------
 async function loadNameColors() {
-  const { data, error } = await supabaseClient.from("name_colors").select("*");
+  const { data, error } = await supabaseClientClient.from("name_colors").select("*");
   if (error) {
     console.error("loadNameColors error", error);
     return;
@@ -60,7 +60,7 @@ async function loadNameColors() {
 
 async function upsertNameColor(name, color) {
   nameColorMap[name] = color;
-  const { error } = await supabaseClient
+  const { error } = await supabaseClientClient
     .from("name_colors")
     .upsert({ name, color });
   if (error) console.error("upsertNameColor error", error);
@@ -71,7 +71,7 @@ async function loadEventsForMonth(year, month) {
   const lastDay = new Date(year, month + 1, 0);
   const lastDayISO = dateToISO(lastDay);
 
-  const { data, error } = await supabaseClient
+  const { data, error } = await supabaseClientClient
     .from("events")
     .select("*")
     .gte("date", firstDayISO)
@@ -87,7 +87,7 @@ async function loadEventsForMonth(year, month) {
 }
 
 async function createEvent(evt) {
-  const { data, error } = await supabaseClient
+  const { data, error } = await supabaseClientClient
     .from("events")
     .insert(evt)
     .select()
@@ -101,7 +101,7 @@ async function createEvent(evt) {
 }
 
 async function updateEvent(id, updates) {
-  const { data, error } = await supabaseClient
+  const { data, error } = await supabaseClientClient
     .from("events")
     .update(updates)
     .eq("id", id)
@@ -116,7 +116,7 @@ async function updateEvent(id, updates) {
 }
 
 async function deleteEvent(id) {
-  const { error } = await supabaseClient
+  const { error } = await supabaseClientClient
     .from("events")
     .delete()
     .eq("id", id);
