@@ -210,7 +210,10 @@ select {
 }
 .form-row input[type="text"],
 .form-row textarea,
-.form-row input[type="color"] {
+.form-row input[type="color"],
+.form-row input[type="number"],
+.form-row input[type="date"],
+.form-row select {
   background: #0b1220;
   color: var(--text);
   border: 1px solid var(--border);
@@ -274,4 +277,3 @@ select {
   .legend { justify-content: flex-start; }
   #calendar { height: auto; min-height: calc(100vh - 180px); }
 }
-
