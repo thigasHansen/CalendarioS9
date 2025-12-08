@@ -51,7 +51,7 @@
     <div id="grid" class="grid"></div>
   </main>
 
-  <!-- Event Modal -->
+  <!-- Modal de Evento -->
   <div id="eventModal" class="modal" aria-hidden="true">
     <div class="modal-content">
       <div class="modal-header">
@@ -66,11 +66,11 @@
           </div>
           <div class="form-row">
             <label>Nome do evento</label>
-            <input type="text" id="eventName" placeholder="Ex.: Reunião de equipe" required/>
+            <input type="text" id="eventName" required/>
           </div>
           <div class="form-row">
             <label>Detalhes (opcional)</label>
-            <textarea id="eventDetails" rows="3" placeholder="Notas ou descrição"></textarea>
+            <textarea id="eventDetails"></textarea>
           </div>
           <div class="form-row">
             <label>Recorrência</label>
@@ -99,7 +99,6 @@
             <button type="button" class="btn btn-outline" id="deleteEventBtn" style="display:none">Excluir</button>
           </div>
         </form>
-
         <div id="existingEvents">
           <h3>Eventos neste dia</h3>
           <ul id="eventList"></ul>
@@ -108,7 +107,7 @@
     </div>
   </div>
 
-  <!-- Manage Colors Modal -->
+  <!-- Modal de Cores -->
   <div id="colorsModal" class="modal" aria-hidden="true">
     <div class="modal-content">
       <div class="modal-header">
@@ -118,7 +117,7 @@
       <div class="modal-body">
         <p>As cores são vinculadas ao nome do evento. Alterar uma cor atualiza todas as entradas com esse nome.</p>
         <div class="form-row">
-          <input id="newEventKey" type="text" placeholder="Novo nome de evento (igual ao existente)"/>
+          <input id="newEventKey" type="text" placeholder="Novo nome de evento"/>
           <input id="newEventColor" type="color" value="#2f80ed"/>
           <button id="addColorMapBtn" class="btn">Adicionar</button>
         </div>
@@ -131,15 +130,6 @@
     <small>Calendário Planejador 2025–2026</small>
   </footer>
 
-  <script src="script.js"></script>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-  const { createClient } = supabase;
-  const supabaseUrl = "https://whrugfiojjbxkzjvtgjs.supabase.co";
-  const supabaseKey = "sb_publishable_3qJoVWoF-Kfn1n2dAi0RgA_gqT-j5uN";
-  const supabaseClient = createClient(supabaseUrl, supabaseKey);
-</script>
-
+  <script type="module" src="script.js"></script>
 </body>
 </html>
