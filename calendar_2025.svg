@@ -1,80 +1,35 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <title>Calendário 2025</title>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="2200" height="1600">
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; }
-    .mes { display: none; }
-    svg { width: 600px; height: 400px; border: 1px solid #ccc; margin-top: 20px; }
-    text { font-family: monospace; font-size: 14px; }
-    .titulo { font-size: 20px; font-weight: bold; }
+    text { font-family: monospace; font-size: 12px; }
+    .mes { font-size: 16px; font-weight: bold; }
     .semana { fill: gray; }
     .dia { fill: black; }
   </style>
-</head>
-<body>
-  <h1>Calendário 2025</h1>
 
-  <!-- Dropdown -->
-  <label for="mesSelect">Escolha o mês:</label>
-  <select id="mesSelect" onchange="mostrarMes()">
-    <option value="janeiro">Janeiro</option>
-    <option value="fevereiro">Fevereiro</option>
-    <option value="marco">Março</option>
-    <option value="abril">Abril</option>
-    <option value="maio">Maio</option>
-    <option value="junho">Junho</option>
-    <option value="julho">Julho</option>
-    <option value="agosto">Agosto</option>
-    <option value="setembro">Setembro</option>
-    <option value="outubro">Outubro</option>
-    <option value="novembro">Novembro</option>
-    <option value="dezembro">Dezembro</option>
-  </select>
+  <text x="20" y="30" font-size="24" font-weight="bold">Calendário 2025</text>
 
-  <!-- Calendários SVG (um por mês) -->
-  <div id="janeiro" class="mes">
-    <svg xmlns="http://www.w3.org/2000/svg">
-      <text x="250" y="30" class="titulo">Janeiro 2025</text>
-      <!-- Cabeçalho -->
-      <g transform="translate(50,60)">
-        <text x="0" y="0" class="semana">Seg</text>
-        <text x="70" y="0" class="semana">Ter</text>
-        <text x="140" y="0" class="semana">Qua</text>
-        <text x="210" y="0" class="semana">Qui</text>
-        <text x="280" y="0" class="semana">Sex</text>
-        <text x="350" y="0" class="semana">Sáb</text>
-        <text x="420" y="0" class="semana">Dom</text>
-      </g>
-      <!-- Dias (exemplo simplificado) -->
-      <g transform="translate(50,90)">
-        <text x="70" y="0" class="dia">1</text>
-        <text x="140" y="0" class="dia">2</text>
-        <text x="210" y="0" class="dia">3</text>
-        <!-- ... até 31 -->
-      </g>
-    </svg>
-  </div>
+  <!-- Janeiro -->
+  <g id="janeiro">
+    <text x="50" y="80" class="mes">Janeiro</text>
+    <!-- Cabeçalho -->
+    <g transform="translate(50,100)">
+      <text x="0" y="0" class="semana">Seg</text>
+      <text x="40" y="0" class="semana">Ter</text>
+      <text x="80" y="0" class="semana">Qua</text>
+      <text x="120" y="0" class="semana">Qui</text>
+      <text x="160" y="0" class="semana">Sex</text>
+      <text x="200" y="0" class="semana">Sáb</text>
+      <text x="240" y="0" class="semana">Dom</text>
+    </g>
+    <!-- Dias (exemplo simplificado) -->
+    <g transform="translate(50,120)">
+      <text x="40" y="0" class="dia">1</text>
+      <text x="80" y="0" class="dia">2</text>
+      <text x="120" y="0" class="dia">3</text>
+      <!-- ... até 31 -->
+    </g>
+  </g>
 
-  <div id="fevereiro" class="mes">
-    <svg xmlns="http://www.w3.org/2000/svg">
-      <text x="250" y="30" class="titulo">Fevereiro 2025</text>
-      <!-- Cabeçalho e dias aqui -->
-    </svg>
-  </div>
-
-  <!-- Repita para os outros meses -->
-
-  <script>
-    function mostrarMes() {
-      const meses = document.querySelectorAll('.mes');
-      meses.forEach(m => m.style.display = 'none');
-      const selecionado = document.getElementById('mesSelect').value;
-      document.getElementById(selecionado).style.display = 'block';
-    }
-    // Mostrar janeiro por padrão
-    mostrarMes();
-  </script>
-</body>
-</html>
+  <!-- Repita blocos <g id="fevereiro"> ... </g> até dezembro -->
+</svg>
