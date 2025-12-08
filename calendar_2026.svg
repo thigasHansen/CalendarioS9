@@ -1,0 +1,89 @@
+import calendar
+import random
+
+COLOR_PALETTE = [
+    "#FF5733", "#33FF57", "#3357FF", "#FF33A8",
+    "#33FFF5", "#F5FF33", "#A833FF", "#FF8C33"
+]
+
+name_colors = {}
+
+def get_color_for_name(name, custom_color=None):
+    if custom_color:
+        name_colors[name] = custom_color
+    if name not in name_colors:
+        name_colors[name] = random.choice(COLOR_PALETTE)
+    return name_colors[name]
+
+def generate_year_svg(year, filename, events=None):
+    cal = calendar.Calendar(firstweekday=0)
+    months = list(calendar.month_name)[1:]
+    
+    cell_w, cell_h = 40, 30
+    margin_x, margin_y = 50, 50
+    svg = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="2000" height="1200">',
+        f'<style>text {{ font-family: monospace; font-size: 12px; }}</style>',
+        f'<script><![CDATA[',
+        # JavaScript to remove elements
+        """
+        function removeEntry(id) {
+            var el = document.getElementById(id);
+            if (el) { el.remove(); }
+        }
+        """,
+        ']]></script>',
+        f'<text x="10" y="20" font-size="20" font-weight="bold">{year}</text>'
+    ]
+    
+    entry_id = 0
+    
+    for mi, month in enumerate(months):
+        col, row = mi % 4, mi // 4
+        offset_x = margin_x + col * 450
+        offset_y = margin_y + row * 300
+        
+        svg.append(f'<text x="{offset_x}" y="{offset_y}" font-size="16" font-weight="bold">{month}</text>')
+        
+        for wi, wd in enumerate(["Mo","Tu","We","Th","Fr","Sa","Su"]):
+            x = offset_x + wi * cell_w
+            y = offset_y + 20
+            svg.append(f'<text x="{x}" y="{y}" fill="gray">{wd}</text>')
+        
+        y_offset = offset_y + 40
+        for week_i, week in enumerate(cal.monthdayscalendar(year, mi+1)):
+            for day_i, day in enumerate(week):
+                if day == 0:
+                    continue
+                x = offset_x + day_i * cell_w
+                y = y_offset + week_i * cell_h
+                svg.append(f'<text x="{x}" y="{y}">{day}</text>')
+                
+                if events and (mi+1, day) in events:
+                    for idx, (name, custom_color) in enumerate(events[(mi+1, day)]):
+                        color = get_color_for_name(name, custom_color)
+                        entry_id += 1
+                        text_id = f"entry{entry_id}"
+                        
+                        # Name text
+                        svg.append(
+                            f'<text id="{text_id}" x="{x+20}" y="{y+idx*12}" fill="{color}" font-size="10">{name}</text>'
+                        )
+                        # Remove button (❌)
+                        svg.append(
+                            f'<text x="{x+70}" y="{y+idx*12}" font-size="10" fill="red" cursor="pointer" onclick="removeEntry(\'{text_id}\')">❌</text>'
+                        )
+    
+    svg.append('</svg>')
+    
+    with open(filename, "w") as f:
+        f.write("\n".join(svg))
+
+# Example usage
+events_2025 = {
+    (1, 15): [("Thiago", None)],
+    (2, 20): [("Alice", "#FF0000")],
+    (12, 25): [("Thiago", None), ("Bob", None)]
+}
+
+generate_year_svg(2025, "calendar_2025.svg", events_2025)
