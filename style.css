@@ -320,3 +320,13 @@ html, body {
     grid-auto-rows: minmax(180px, 1fr);
   }
 }
+
+/* ... keep previous styles ... */
+
+.other-month .cell-date,
+.other-month .cell-weekday {
+  color: var(--muted);
+}
+.other-month {
+  background: #0c0f14;
+}
