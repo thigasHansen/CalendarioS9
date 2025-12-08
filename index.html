@@ -1,49 +1,68 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Calendars 2025 & 2026</title>
+  <title>Calendário 2025-2026</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: #f4f4f4;
-      margin: 0;
-      padding: 20px;
-    }
-    h1 {
-      margin-bottom: 40px;
-    }
-    .calendar-container {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 40px;
-    }
-    .calendar {
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    }
-    object {
-      width: 900px;
-      height: 600px;
-      border: 1px solid #ccc;
-    }
+    body { font-family: Arial, sans-serif; text-align: center; }
+    select { margin: 10px; padding: 5px; }
+    #calendario { margin-top: 20px; }
+    object { width: 1000px; height: 700px; border: 1px solid #ccc; }
   </style>
 </head>
 <body>
-  <h1>Interactive Calendars</h1>
-  <div class="calendar-container">
-    <div class="calendar">
-      <h2>2025</h2>
-      <object type="image/svg+xml" data="calendar_2025.svg"></object>
-    </div>
-    <div class="calendar">
-      <h2>2026</h2>
-      <object type="image/svg+xml" data="calendar_2026.svg"></object>
-    </div>
+  <h1>Calendário Interativo</h1>
+
+  <!-- Dropdowns -->
+  <label for="ano">Ano:</label>
+  <select id="ano" onchange="atualizarCalendario()">
+    <option value="2025">2025</option>
+    <option value="2026">2026</option>
+  </select>
+
+  <label for="mes">Mês:</label>
+  <select id="mes" onchange="atualizarCalendario()">
+    <option value="janeiro">Janeiro</option>
+    <option value="fevereiro">Fevereiro</option>
+    <option value="marco">Março</option>
+    <option value="abril">Abril</option>
+    <option value="maio">Maio</option>
+    <option value="junho">Junho</option>
+    <option value="julho">Julho</option>
+    <option value="agosto">Agosto</option>
+    <option value="setembro">Setembro</option>
+    <option value="outubro">Outubro</option>
+    <option value="novembro">Novembro</option>
+    <option value="dezembro">Dezembro</option>
+  </select>
+
+  <!-- Área do calendário -->
+  <div id="calendario">
+    <object id="svgCalendario" type="image/svg+xml" data="calendario_2025.svg"></object>
   </div>
+
+  <script>
+    function atualizarCalendario() {
+      const ano = document.getElementById("ano").value;
+      const mes = document.getElementById("mes").value;
+      const obj = document.getElementById("svgCalendario");
+
+      // Troca o arquivo SVG conforme o ano
+      obj.data = "calendario_" + ano + ".svg";
+
+      // Quando o SVG carregar, mostra apenas o mês selecionado
+      obj.onload = function() {
+        const svgDoc = obj.contentDocument;
+        if (!svgDoc) return;
+        const meses = svgDoc.querySelectorAll("g[id]");
+        meses.forEach(m => m.setAttribute("display","none"));
+        const selecionado = svgDoc.getElementById(mes);
+        if (selecionado) selecionado.setAttribute("display","inline");
+      };
+    }
+
+    // Inicializa com Janeiro 2025
+    atualizarCalendario();
+  </script>
 </body>
 </html>
