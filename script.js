@@ -5,15 +5,17 @@ const STORAGE_COLORS = "planner.colors";
 // State
 let currentYear;
 let currentMonth; // 0-11
-let events = {};  // { "YYYY-MM-DD": [ {id, name, details} ] }
-let colorMap = {}; // { "Event Name": "#RRGGBB" }
+// events: { "YYYY-MM-DD": [ {id, name, details, recurrence?} ] }
+let events = {};
+// colorMap: { "Event Name": "#RRGGBB" }
+let colorMap = {};
 
 // Utilities
 const formatDateKey = (y, m, d) =>
   `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 
 const monthName = (m) =>
-  ["January","February","March","April","May","June","July","August","September","October","November","December"][m];
+  ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"][m];
 
 const loadStorage = () => {
   try {
@@ -33,7 +35,7 @@ const saveColors = () =>
 
 const getColorForName = (name) => {
   if (colorMap[name]) return colorMap[name];
-  // Assign deterministic fallback color from name hash
+  // Deterministic fallback color from name hash
   const palette = [
     "#ef4444","#f59e0b","#22c55e","#10b981","#3b82f6","#8b5cf6","#ec4899","#14b8a6","#84cc16","#e11d48"
   ];
@@ -65,6 +67,11 @@ const eventColorInput = document.getElementById("eventColor");
 const deleteEventBtn = document.getElementById("deleteEventBtn");
 const eventListEl = document.getElementById("eventList");
 
+// Recurrence inputs
+const eventRecurrenceSelect = document.getElementById("eventRecurrence");
+const eventIntervalInput = document.getElementById("eventInterval");
+const eventUntilInput = document.getElementById("eventUntil");
+
 const colorsModal = document.getElementById("colorsModal");
 const manageColorsBtn = document.getElementById("manageColorsBtn");
 const closeColorsBtn = document.getElementById("closeColorsBtn");
@@ -74,8 +81,9 @@ const newEventColorInput = document.getElementById("newEventColor");
 const addColorMapBtn = document.getElementById("addColorMapBtn");
 
 // Modal state
-let modalDateKey = null;
-let editingEventId = null;
+let modalDateKey = null;     // date currently being edited/viewed
+let editingEventId = null;   // event id if editing
+let editingOriginKey = null; // for recurring events created on a different start date
 
 // Init
 function init() {
@@ -135,6 +143,7 @@ function init() {
   renderCalendar();
 }
 
+// Calendar rendering
 function renderCalendar() {
   viewTitle.textContent = `${monthName(currentMonth)} ${currentYear}`;
   grid.innerHTML = "";
@@ -181,7 +190,7 @@ function renderCalendar() {
     const addBtn = document.createElement("button");
     addBtn.className = "icon-btn";
     addBtn.textContent = "+";
-    addBtn.title = "Add event";
+    addBtn.title = "Adicionar evento";
     addBtn.addEventListener("click", () => openEventModal(dateKey));
 
     header.appendChild(num);
@@ -190,11 +199,13 @@ function renderCalendar() {
     const list = document.createElement("div");
     list.className = "event-list";
 
-    const items = events[dateKey] || [];
+    const items = getEventsForDate(dateKey, cellDate);
     items.forEach((ev) => {
       const chip = document.createElement("div");
       chip.className = "event-chip";
-      chip.addEventListener("click", () => openEventModal(dateKey, ev.id));
+      chip.addEventListener("click", () =>
+        openEventModal(dateKey, ev.id, ev.__originKey || dateKey)
+      );
 
       const dot = document.createElement("span");
       dot.className = "event-dot";
@@ -237,28 +248,92 @@ function renderCalendar() {
   }
 }
 
+// Recurrence evaluation
+function getEventsForDate(dateKey, dateObj) {
+  const direct = events[dateKey] || [];
+  const recurring = [];
+
+  // Evaluate all events for recurrence
+  Object.keys(events).forEach(originKey => {
+    (events[originKey] || []).forEach(ev => {
+      if (!ev.recurrence) return;
+
+      const startDate = new Date(originKey);
+      const untilDate = ev.recurrence.until ? new Date(ev.recurrence.until) : null;
+
+      if (dateObj < startDate) return;
+      if (untilDate && dateObj > untilDate) return;
+
+      const diffDays = Math.floor((dateObj - startDate) / (1000 * 60 * 60 * 24));
+      const interval = Math.max(1, Number(ev.recurrence.interval || 1));
+
+      switch (ev.recurrence.type) {
+        case "daily":
+          if (diffDays % interval === 0) recurring.push({ ...ev, __originKey: originKey });
+          break;
+        case "weekly":
+          if (diffDays % (7 * interval) === 0 && dateObj.getDay() === startDate.getDay()) {
+            recurring.push({ ...ev, __originKey: originKey });
+          }
+          break;
+        case "monthly":
+          // Same day-of-month, months difference multiple of interval
+          const monthsDiff = (dateObj.getFullYear() - startDate.getFullYear()) * 12 +
+                             (dateObj.getMonth() - startDate.getMonth());
+          if (dateObj.getDate() === startDate.getDate() && monthsDiff % interval === 0) {
+            recurring.push({ ...ev, __originKey: originKey });
+          }
+          break;
+        case "yearly":
+          const yearsDiff = dateObj.getFullYear() - startDate.getFullYear();
+          if (
+            dateObj.getDate() === startDate.getDate() &&
+            dateObj.getMonth() === startDate.getMonth() &&
+            yearsDiff % interval === 0
+          ) {
+            recurring.push({ ...ev, __originKey: originKey });
+          }
+          break;
+      }
+    });
+  });
+
+  return [...direct, ...recurring];
+}
+
 // Event modal functions
-function openEventModal(dateKey, eventId = null) {
+function openEventModal(dateKey, eventId = null, originKey = null) {
   modalDateKey = dateKey;
   editingEventId = eventId;
+  editingOriginKey = originKey; // if editing a recurring instance, points to its start date
 
   eventDateInput.value = dateKey;
   eventNameInput.value = "";
   eventDetailsInput.value = "";
   deleteEventBtn.style.display = "none";
 
-  // If editing, preload data
+  // Reset recurrence fields
+  eventRecurrenceSelect.value = "";
+  eventIntervalInput.value = "1";
+  eventUntilInput.value = "";
+
+  // If editing, preload data (from origin list if provided)
   if (eventId) {
-    const list = events[dateKey] || [];
-    const target = list.find((ev) => ev.id === eventId);
+    const originList = events[editingOriginKey || dateKey] || [];
+    const target = originList.find((ev) => ev.id === eventId);
     if (target) {
       eventNameInput.value = target.name;
       eventDetailsInput.value = target.details || "";
+      if (target.recurrence) {
+        eventRecurrenceSelect.value = target.recurrence.type || "";
+        eventIntervalInput.value = String(target.recurrence.interval || 1);
+        eventUntilInput.value = target.recurrence.until || "";
+      }
       deleteEventBtn.style.display = "inline-block";
     }
   }
 
-  // Set color preview (based on current name)
+  // Set color preview
   updateEventColorPreview();
 
   // Populate existing events list for this day
@@ -273,14 +348,17 @@ function closeEventModal() {
   eventModal.setAttribute("aria-hidden", "true");
   modalDateKey = null;
   editingEventId = null;
+  editingOriginKey = null;
 }
 
 function renderEventListForDay(dateKey) {
   eventListEl.innerHTML = "";
-  const list = events[dateKey] || [];
+  const dateObj = new Date(dateKey);
+  const list = getEventsForDate(dateKey, dateObj);
+
   if (list.length === 0) {
     const li = document.createElement("li");
-    li.textContent = "No events yet.";
+    li.textContent = "Sem eventos.";
     li.style.color = "#94a3b8";
     eventListEl.appendChild(li);
     return;
@@ -288,7 +366,9 @@ function renderEventListForDay(dateKey) {
   list.forEach((ev) => {
     const li = document.createElement("li");
     li.className = "event-chip";
-    li.addEventListener("click", () => openEventModal(dateKey, ev.id));
+    li.addEventListener("click", () =>
+      openEventModal(dateKey, ev.id, ev.__originKey || dateKey)
+    );
 
     const dot = document.createElement("span");
     dot.className = "event-dot";
@@ -327,25 +407,39 @@ function updateEventColorPreview() {
 function onEventFormSubmit(e) {
   e.preventDefault();
   const name = eventNameInput.value.trim();
-  if (!name) return; // required
+  if (!name) return;
 
   const details = eventDetailsInput.value.trim();
   const dateKey = modalDateKey;
 
-  const list = events[dateKey] || [];
+  // Recurrence capture
+  const recurrenceType = eventRecurrenceSelect.value;
+  const recurrenceInterval = Math.max(1, Number(eventIntervalInput.value || 1));
+  const recurrenceUntil = eventUntilInput.value;
+  const recurrence = recurrenceType ? {
+    type: recurrenceType,
+    interval: recurrenceInterval,
+    until: recurrenceUntil || null
+  } : null;
+
+  // Choose list: for editing recurring instance, always modify on originKey
+  const targetKey = editingEventId ? (editingOriginKey || dateKey) : dateKey;
+  const list = events[targetKey] || [];
+
   if (editingEventId) {
     // Update existing
     const idx = list.findIndex((ev) => ev.id === editingEventId);
     if (idx >= 0) {
       list[idx].name = name;
       list[idx].details = details;
+      list[idx].recurrence = recurrence;
     }
   } else {
     // Add new
     const id = cryptoRandomId();
-    list.push({ id, name, details });
+    list.push({ id, name, details, recurrence });
   }
-  events[dateKey] = list;
+  events[targetKey] = list;
   saveEvents();
 
   // Ensure color consistency exists
@@ -357,10 +451,11 @@ function onEventFormSubmit(e) {
 }
 
 function onDeleteEvent() {
-  if (!editingEventId || !modalDateKey) return;
-  const list = events[modalDateKey] || [];
+  if (!editingEventId) return;
+  const key = editingOriginKey || modalDateKey;
+  const list = events[key] || [];
   const filtered = list.filter((ev) => ev.id !== editingEventId);
-  events[modalDateKey] = filtered;
+  events[key] = filtered;
   saveEvents();
   renderCalendar();
   closeEventModal();
@@ -387,7 +482,7 @@ function renderColorMapList() {
   const keys = Object.keys(colorMap).sort((a, b) => a.localeCompare(b));
   if (keys.length === 0) {
     const li = document.createElement("li");
-    li.textContent = "No event color mappings yet.";
+    li.textContent = "Nenhum mapeamento de cor ainda.";
     li.style.color = "#94a3b8";
     colorMapList.appendChild(li);
     return;
@@ -418,7 +513,7 @@ function renderColorMapList() {
 
     const removeBtn = document.createElement("button");
     removeBtn.className = "btn btn-danger";
-    removeBtn.textContent = "Remove";
+    removeBtn.textContent = "Remover";
     removeBtn.addEventListener("click", () => {
       delete colorMap[key];
       saveColors();
