@@ -4,7 +4,7 @@ const supabase_ANON_KEY = "sb_publishable_3qJoVWoF-Kfn1n2dAi0RgA_gqT-j5uN";
 const BASE_BUDGET = 2000000.00; // R$ 2.000.000,00
 
 // Initialize supabaseClient (UMD global is `supabaseClient`)
-const supabaseClientClient = supabaseClient.createClient(supabaseClient_URL, supabaseClient_ANON_KEY);
+const supabaseClientClient = supabaseClient.createClient(supabase_URL, supabase_ANON_KEY);
 
 // --------- STATE ---------
 let currentYear = new Date().getFullYear();
