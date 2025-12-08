@@ -5,9 +5,10 @@
   <title>Calendário 2025-2026</title>
   <style>
     body { font-family: Arial, sans-serif; text-align: center; }
-    select { margin: 10px; padding: 5px; }
+    select, input { margin: 5px; padding: 5px; }
     #calendario { margin-top: 20px; }
     object { width: 1000px; height: 700px; border: 1px solid #ccc; }
+    .evento { font-size: 10px; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -36,32 +37,71 @@
     <option value="dezembro">Dezembro</option>
   </select>
 
+  <!-- Formulário para adicionar eventos -->
+  <h2>Adicionar Evento</h2>
+  <input type="text" id="nomeEvento" placeholder="Nome do evento">
+  <input type="date" id="dataEvento">
+  <input type="color" id="corEvento" value="#FF5733">
+  <button onclick="adicionarEvento()">Adicionar</button>
+
   <!-- Área do calendário -->
   <div id="calendario">
     <object id="svgCalendario" type="image/svg+xml" data="calendario_2025.svg"></object>
   </div>
 
   <script>
+    const coresPorNome = {}; // garante cor consistente por nome
+
     function atualizarCalendario() {
       const ano = document.getElementById("ano").value;
-      const mes = document.getElementById("mes").value;
       const obj = document.getElementById("svgCalendario");
-
-      // Troca o arquivo SVG conforme o ano
       obj.data = "calendario_" + ano + ".svg";
-
-      // Quando o SVG carregar, mostra apenas o mês selecionado
-      obj.onload = function() {
-        const svgDoc = obj.contentDocument;
-        if (!svgDoc) return;
-        const meses = svgDoc.querySelectorAll("g[id]");
-        meses.forEach(m => m.setAttribute("display","none"));
-        const selecionado = svgDoc.getElementById(mes);
-        if (selecionado) selecionado.setAttribute("display","inline");
-      };
     }
 
-    // Inicializa com Janeiro 2025
+    function adicionarEvento() {
+      const nome = document.getElementById("nomeEvento").value.trim();
+      const data = document.getElementById("dataEvento").value;
+      const corEscolhida = document.getElementById("corEvento").value;
+      if (!nome || !data) { alert("Preencha nome e data!"); return; }
+
+      // cor consistente por nome
+      if (!coresPorNome[nome]) coresPorNome[nome] = corEscolhida;
+      const cor = coresPorNome[nome];
+
+      const obj = document.getElementById("svgCalendario");
+      const svgDoc = obj.contentDocument;
+      if (!svgDoc) return;
+
+      const diaEl = svgDoc.getElementById("dia-" + data);
+      if (!diaEl) { alert("Data não encontrada no calendário!"); return; }
+
+      // criar texto do evento
+      const eventoId = "evento-" + Date.now();
+      const evento = svgDoc.createElementNS("http://www.w3.org/2000/svg","text");
+      evento.setAttribute("id", eventoId);
+      evento.setAttribute("x", parseInt(diaEl.getAttribute("x")) + 20);
+      evento.setAttribute("y", parseInt(diaEl.getAttribute("y")) + 12);
+      evento.setAttribute("fill", cor);
+      evento.setAttribute("class","evento");
+      evento.textContent = nome;
+
+      // botão de remover
+      const remover = svgDoc.createElementNS("http://www.w3.org/2000/svg","text");
+      remover.setAttribute("x", parseInt(diaEl.getAttribute("x")) + 80);
+      remover.setAttribute("y", parseInt(diaEl.getAttribute("y")) + 12);
+      remover.setAttribute("fill","red");
+      remover.setAttribute("class","evento");
+      remover.textContent = "❌";
+      remover.onclick = () => {
+        evento.remove();
+        remover.remove();
+      };
+
+      diaEl.parentNode.appendChild(evento);
+      diaEl.parentNode.appendChild(remover);
+    }
+
+    // Inicializa
     atualizarCalendario();
   </script>
 </body>
