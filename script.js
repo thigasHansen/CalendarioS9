@@ -49,7 +49,7 @@ function randomColorHex(nameSeed = "") {
 
 // --------- supabaseClient DATA ---------
 async function loadNameColors() {
-  const { data, error } = await supabaseClientClient.from("name_colors").select("*");
+  const { data, error } = await supabaseClient.from("name_colors").select("*");
   if (error) {
     console.error("loadNameColors error", error);
     return;
@@ -60,7 +60,7 @@ async function loadNameColors() {
 
 async function upsertNameColor(name, color) {
   nameColorMap[name] = color;
-  const { error } = await supabaseClientClient
+  const { error } = await supabaseClient
     .from("name_colors")
     .upsert({ name, color });
   if (error) console.error("upsertNameColor error", error);
@@ -71,7 +71,7 @@ async function loadEventsForMonth(year, month) {
   const lastDay = new Date(year, month + 1, 0);
   const lastDayISO = dateToISO(lastDay);
 
-  const { data, error } = await supabaseClientClient
+  const { data, error } = await supabaseClient
     .from("events")
     .select("*")
     .gte("date", firstDayISO)
@@ -87,7 +87,7 @@ async function loadEventsForMonth(year, month) {
 }
 
 async function createEvent(evt) {
-  const { data, error } = await supabaseClientClient
+  const { data, error } = await supabaseClient
     .from("events")
     .insert(evt)
     .select()
@@ -101,7 +101,7 @@ async function createEvent(evt) {
 }
 
 async function updateEvent(id, updates) {
-  const { data, error } = await supabaseClientClient
+  const { data, error } = await supabaseClient
     .from("events")
     .update(updates)
     .eq("id", id)
@@ -116,7 +116,7 @@ async function updateEvent(id, updates) {
 }
 
 async function deleteEvent(id) {
-  const { error } = await supabaseClientClient
+  const { error } = await supabaseClient
     .from("events")
     .delete()
     .eq("id", id);
