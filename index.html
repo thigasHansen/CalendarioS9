@@ -1,87 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Calendar (Dec 2025 – Dec 2026)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link href="style.css" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta charset="UTF-8">
+  <title>Simple Calendar</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; }
+    .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 10px; }
+    .day { padding: 10px; border: 1px solid #ccc; }
+    .header { font-weight: bold; background: #f0f0f0; }
+    .controls { margin: 15px; }
+  </style>
 </head>
 <body>
-  <header class="app-header">
-    <div class="title">Calendar: December 2025 – December 2026</div>
-    <div class="controls">
-      <button id="prevMonthBtn" class="nav-btn">Prev</button>
-      <div id="currentMonthLabel" class="month-label"></div>
-      <button id="nextMonthBtn" class="nav-btn">Next</button>
-    </div>
-    <div class="legend">
-      <div class="legend-title">Name color legend</div>
-      <div id="legendItems" class="legend-items"></div>
-    </div>
-  </header>
-
-  <main class="calendar-container">
-    <div class="calendar">
-      <div class="calendar-grid" id="calendarGrid"></div>
-    </div>
-  </main>
-
-  <!-- Modal: Add/Edit Entry -->
-  <div id="entryModal" class="modal hidden">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 id="modalTitle">Add entry</h3>
-        <button class="close-btn" id="closeModalBtn">&times;</button>
-      </div>
-      <div class="modal-body">
-        <form id="entryForm">
-          <input type="hidden" id="entryId" />
-          <div class="form-row">
-            <label for="entryDate">Date</label>
-            <input type="date" id="entryDate" required />
-          </div>
-          <div class="form-row">
-            <label for="entryName">Name</label>
-            <input type="text" id="entryName" required />
-          </div>
-          <div class="form-row">
-            <label for="entryTitle">Title</label>
-            <input type="text" id="entryTitle" required />
-          </div>
-          <div class="form-row">
-            <label for="entryComment">Comment</label>
-            <textarea id="entryComment" rows="3"></textarea>
-          </div>
-          <div class="form-row">
-            <label for="entryColor">Color</label>
-            <input type="color" id="entryColor" />
-          </div>
-          <div class="form-row">
-            <label for="entryRecurrence">Recurrence</label>
-            <select id="entryRecurrence">
-              <option value="none">None</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="yearly">Yearly</option>
-            </select>
-          </div>
-          <div class="form-row">
-            <label for="entryRecurrenceUntil">Recurrence Until</label>
-            <input type="date" id="entryRecurrenceUntil" />
-          </div>
-          <div class="form-actions">
-            <button type="submit" class="primary-btn">Save</button>
-            <button type="button" class="secondary-btn" id="deleteEntryBtn">Delete</button>
-          </div>
-        </form>
-      </div>
-    </div>
+  <h1 id="monthYear"></h1>
+  <div class="controls">
+    <button onclick="prevMonth()">Previous</button>
+    <button onclick="nextMonth()">Next</button>
   </div>
+  <div id="calendar"></div>
 
-  <div id="tooltip" class="tooltip hidden"></div>
-  <button id="addEntryBtn" class="fab">+</button>
+  <script>
+    let currentYear = new Date().getFullYear();
+    let currentMonth = new Date().getMonth();
 
-  <script src="app.js"></script>
+    function generateCalendar(year, month) {
+      const calendar = document.getElementById("calendar");
+      const monthYear = document.getElementById("monthYear");
+      calendar.innerHTML = "";
+
+      const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+      monthYear.textContent = monthNames[month] + " " + year;
+
+      const daysOfWeek = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+      daysOfWeek.forEach(d => {
+        const div = document.createElement("div");
+        div.className = "day header";
+        div.textContent = d;
+        calendar.appendChild(div);
+      });
+
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month+1, 0).getDate();
+
+      for (let i=0; i<firstDay; i++) {
+        const div = document.createElement("div");
+        div.className = "day";
+        calendar.appendChild(div);
+      }
+
+      for (let d=1; d<=daysInMonth; d++) {
+        const div = document.createElement("div");
+        div.className = "day";
+        div.textContent = d;
+        calendar.appendChild(div);
+      }
+    }
+
+    function nextMonth() {
+      currentMonth++;
+      if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
+      }
+      generateCalendar(currentYear, currentMonth);
+    }
+
+    function prevMonth() {
+      currentMonth--;
+      if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear--;
+      }
+      generateCalendar(currentYear, currentMonth);
+    }
+
+    generateCalendar(currentYear, currentMonth);
+  </script>
 </body>
 </html>
