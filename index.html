@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Planner Dinastia</title>
+  <title>Calendário Planejador 2025–2026</title>
   <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
@@ -71,6 +71,24 @@
           <div class="form-row">
             <label>Detalhes (opcional)</label>
             <textarea id="eventDetails" rows="3" placeholder="Notas ou descrição"></textarea>
+          </div>
+          <div class="form-row">
+            <label>Recorrência</label>
+            <select id="eventRecurrence">
+              <option value="">Nenhuma</option>
+              <option value="daily">Diária</option>
+              <option value="weekly">Semanal</option>
+              <option value="monthly">Mensal</option>
+              <option value="yearly">Anual</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Intervalo</label>
+            <input type="number" id="eventInterval" min="1" value="1"/>
+          </div>
+          <div class="form-row">
+            <label>Até (opcional)</label>
+            <input type="date" id="eventUntil"/>
           </div>
           <div class="form-row">
             <label>Cor (automática pelo nome, editável em 'Gerenciar cores')</label>
