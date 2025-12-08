@@ -3,13 +3,13 @@ const SUPABASE_URL = "https://whrugfiojjbxkzjvtgjs.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_3qJoVWoF-Kfn1n2dAi0RgA_gqT-j5uN";
 const BASE_BUDGET = 2000000.00; // R$ 2.000.000,00
 
-// Initialize supabase
-const supabase = supabasejs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Initialize supabase (UMD global is `supabase`)
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // --------- STATE ---------
 let currentYear = new Date().getFullYear();
 let currentMonth = new Date().getMonth();
-let selectedDate = null; // ISO string YYYY-MM-DD
+let selectedDate = null; // YYYY-MM-DD
 let eventsCache = []; // All events loaded for current month
 let nameColorMap = {}; // { name: color }
 
@@ -28,7 +28,6 @@ function dateToISO(dateObj) {
 }
 
 function randomColorHex(nameSeed = "") {
-  // Stable-ish color by hashing name to HSL
   let hash = 0;
   for (let i = 0; i < nameSeed.length; i++) {
     hash = (hash << 5) - hash + nameSeed.charCodeAt(i);
@@ -37,7 +36,6 @@ function randomColorHex(nameSeed = "") {
   const hue = Math.abs(hash) % 360;
   const saturation = 65;
   const lightness = 55;
-  // Convert HSL to HEX quickly
   function hslToHex(h, s, l) {
     s /= 100; l /= 100;
     const k = n => (n + h / 30) % 12;
@@ -51,7 +49,7 @@ function randomColorHex(nameSeed = "") {
 
 // --------- SUPABASE DATA ---------
 async function loadNameColors() {
-  const { data, error } = await supabase.from("name_colors").select("*");
+  const { data, error } = await supabaseClient.from("name_colors").select("*");
   if (error) {
     console.error("loadNameColors error", error);
     return;
@@ -62,20 +60,18 @@ async function loadNameColors() {
 
 async function upsertNameColor(name, color) {
   nameColorMap[name] = color;
-  // Try upsert (insert or update)
-  const { error } = await supabase
+  const { error } = await supabaseClient
     .from("name_colors")
     .upsert({ name, color });
   if (error) console.error("upsertNameColor error", error);
 }
 
 async function loadEventsForMonth(year, month) {
-  // Fetch month range: [firstDay, lastDay]
   const firstDayISO = `${year}-${pad(month + 1)}-01`;
   const lastDay = new Date(year, month + 1, 0);
   const lastDayISO = dateToISO(lastDay);
 
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from("events")
     .select("*")
     .gte("date", firstDayISO)
@@ -91,7 +87,7 @@ async function loadEventsForMonth(year, month) {
 }
 
 async function createEvent(evt) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from("events")
     .insert(evt)
     .select()
@@ -100,13 +96,12 @@ async function createEvent(evt) {
     console.error("createEvent error", error);
     return null;
   }
-  // Ensure color consistency for name
   if (evt.name && evt.color) await upsertNameColor(evt.name, evt.color);
   return data;
 }
 
 async function updateEvent(id, updates) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from("events")
     .update(updates)
     .eq("id", id)
@@ -121,7 +116,7 @@ async function updateEvent(id, updates) {
 }
 
 async function deleteEvent(id) {
-  const { error } = await supabase
+  const { error } = await supabaseClient
     .from("events")
     .delete()
     .eq("id", id);
@@ -130,16 +125,19 @@ async function deleteEvent(id) {
 
 // --------- RENDER ---------
 function renderMonthHeader(year, month) {
-  const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const monthNames = [
+    "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+    "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
+  ];
   document.getElementById("monthYear").textContent = `${monthNames[month]} ${year}`;
 }
 
 function renderCalendar(year, month) {
   const cal = document.getElementById("calendar");
   cal.innerHTML = "";
-  const daysOfWeek = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const daysOfWeek = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
 
-  // Headers
+  // Cabeçalhos
   daysOfWeek.forEach(d => {
     const hd = document.createElement("div");
     hd.className = "day-header";
@@ -147,7 +145,7 @@ function renderCalendar(year, month) {
     cal.appendChild(hd);
   });
 
-  const firstDayIndex = new Date(year, month, 1).getDay();
+  const firstDayIndex = new Date(year, month, 1).getDay(); // 0=Domingo
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   for (let i = 0; i < firstDayIndex; i++) {
@@ -198,17 +196,19 @@ function renderSelectedDatePanel() {
   list.innerHTML = "";
 
   if (!selectedDate) {
-    label.textContent = "Select a date";
+    label.textContent = "Selecione uma data";
     return;
   }
   const d = new Date(selectedDate);
-  label.textContent = d.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  label.textContent = d.toLocaleDateString("pt-BR", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric"
+  });
 
   const dayEvents = eventsCache.filter(e => e.date === selectedDate);
   if (dayEvents.length === 0) {
     const empty = document.createElement("div");
     empty.className = "event-item";
-    empty.textContent = "No events for this date.";
+    empty.textContent = "Sem eventos para esta data.";
     list.appendChild(empty);
   } else {
     dayEvents.forEach(e => {
@@ -238,10 +238,10 @@ function renderSelectedDatePanel() {
       const actions = document.createElement("div");
       actions.className = "event-actions";
       const editBtn = document.createElement("button");
-      editBtn.textContent = "Edit";
+      editBtn.textContent = "Editar";
       editBtn.addEventListener("click", () => openEditModal(e));
       const delBtn = document.createElement("button");
-      delBtn.textContent = "Delete";
+      delBtn.textContent = "Excluir";
       delBtn.className = "danger";
       delBtn.addEventListener("click", async () => {
         await deleteEvent(e.id);
@@ -259,7 +259,6 @@ function renderSelectedDatePanel() {
 }
 
 function updateTodayBudget() {
-  // Only subtract today's events
   const todayISO = dateToISO(new Date());
   const todaysEvents = eventsCache.filter(e => e.date === todayISO);
   const spent = todaysEvents.reduce((sum, e) => sum + Number(e.value || 0), 0);
@@ -286,7 +285,7 @@ function openCreateModal(dateISO) {
     value: "",
     color: ""
   });
-  document.getElementById("modalTitle").textContent = "New event";
+  document.getElementById("modalTitle").textContent = "Novo evento";
   deleteEventBtn.classList.add("hidden");
   showModal();
 }
@@ -300,7 +299,7 @@ function openEditModal(eventObj) {
     value: eventObj.value || "",
     color: eventObj.color || nameColorMap[eventObj.name] || randomColorHex(eventObj.name || "")
   });
-  document.getElementById("modalTitle").textContent = "Edit event";
+  document.getElementById("modalTitle").textContent = "Editar evento";
   deleteEventBtn.classList.remove("hidden");
   showModal();
 }
@@ -349,7 +348,6 @@ eventForm.addEventListener("submit", async (e) => {
   const value = parseFloat(document.getElementById("eventValue").value || "0");
   const color = document.getElementById("eventColor").value;
 
-  // Color consistency by name
   const finalColor = color || nameColorMap[name] || randomColorHex(name);
   await upsertNameColor(name, finalColor);
 
@@ -362,7 +360,6 @@ eventForm.addEventListener("submit", async (e) => {
   }
 
   hideModal();
-  // If date changed and was selected, keep panel consistent
   selectedDate = date;
   await refreshMonth();
   renderSelectedDatePanel();
