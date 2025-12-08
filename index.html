@@ -132,5 +132,14 @@
   </footer>
 
   <script src="script.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const { createClient } = supabase;
+  const supabaseUrl = "https://whrugfiojjbxkzjvtgjs.supabase.co";
+  const supabaseKey = "sb_publishable_3qJoVWoF-Kfn1n2dAi0RgA_gqT-j5uN";
+  const supabaseClient = createClient(supabaseUrl, supabaseKey);
+</script>
+
 </body>
 </html>
