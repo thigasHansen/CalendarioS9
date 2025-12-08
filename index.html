@@ -5,6 +5,7 @@
   <title>Calendar (Dec 2025 – Dec 2026)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="style.css" rel="stylesheet" />
+  <!-- Supabase JS CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -38,40 +39,30 @@
         <form id="entryForm">
           <input type="hidden" id="entryId" />
           <div class="form-row">
-            <label for="entryDate">Date</label>
+            <label for="entryDate"><span class="req">*</span>Date</label>
             <input type="date" id="entryDate" required />
           </div>
           <div class="form-row">
-            <label for="entryName">Name</label>
-            <input type="text" id="entryName" required />
+            <label for="entryName"><span class="req">*</span>Name</label>
+            <input type="text" id="entryName" placeholder="e.g., Sprint, Release, Dentist" required />
           </div>
           <div class="form-row">
-            <label for="entryTitle">Title</label>
-            <input type="text" id="entryTitle" required />
+            <label for="entryTitle"><span class="req">*</span>Title</label>
+            <input type="text" id="entryTitle" placeholder="Short title" required />
           </div>
           <div class="form-row">
-            <label for="entryComment">Comment</label>
-            <textarea id="entryComment" rows="3"></textarea>
+            <label for="entryComment">Comment (hover tooltip)</label>
+            <textarea id="entryComment" rows="3" placeholder="Extra details (optional)"></textarea>
           </div>
+
           <div class="form-row">
-            <label for="entryColor">Color</label>
+            <label for="entryColor">Color for name</label>
             <input type="color" id="entryColor" />
+            <small class="help">Changing this updates all entries with the same name.</small>
           </div>
-          <div class="form-row">
-            <label for="entryRecurrence">Recurrence</label>
-            <select id="entryRecurrence">
-              <option value="none">None</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="yearly">Yearly</option>
-            </select>
-          </div>
-          <div class="form-row">
-            <label for="entryRecurrenceUntil">Recurrence Until</label>
-            <input type="date" id="entryRecurrenceUntil" />
-          </div>
+
           <div class="form-actions">
-            <button type="submit" class="primary-btn">Save</button>
+            <button type="submit" class="primary-btn" id="saveEntryBtn">Save</button>
             <button type="button" class="secondary-btn" id="deleteEntryBtn">Delete</button>
           </div>
         </form>
@@ -79,7 +70,10 @@
     </div>
   </div>
 
+  <!-- Tooltip -->
   <div id="tooltip" class="tooltip hidden"></div>
+
+  <!-- Floating add button -->
   <button id="addEntryBtn" class="fab">+</button>
 
   <script src="app.js"></script>
