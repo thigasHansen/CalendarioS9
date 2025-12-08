@@ -1,108 +1,118 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Calendário 2025-2026</title>
-  <style>
-    body { font-family: Arial, sans-serif; text-align: center; }
-    select, input { margin: 5px; padding: 5px; }
-    #calendario { margin-top: 20px; }
-    object { width: 1000px; height: 700px; border: 1px solid #ccc; }
-    .evento { font-size: 10px; cursor: pointer; }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Planner Calendar 2025–2026</title>
+  <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
-  <h1>Calendário Interativo</h1>
+  <header class="topbar">
+    <div class="controls">
+      <label>
+        Year
+        <select id="yearSelect"></select>
+      </label>
+      <label>
+        Month
+        <select id="monthSelect">
+          <option value="0">January</option>
+          <option value="1">February</option>
+          <option value="2">March</option>
+          <option value="3">April</option>
+          <option value="4">May</option>
+          <option value="5">June</option>
+          <option value="6">July</option>
+          <option value="7">August</option>
+          <option value="8">September</option>
+          <option value="9">October</option>
+          <option value="10">November</option>
+          <option value="11">December</option>
+        </select>
+      </label>
+      <button id="todayBtn" class="btn">Today</button>
+    </div>
+    <h1 id="viewTitle"></h1>
+    <div class="legend">
+      <button id="manageColorsBtn" class="btn btn-outline">Manage colors</button>
+    </div>
+  </header>
 
-  <!-- Dropdowns -->
-  <label for="ano">Ano:</label>
-  <select id="ano" onchange="atualizarCalendario()">
-    <option value="2025">2025</option>
-    <option value="2026">2026</option>
-  </select>
+  <main id="calendar">
+    <div class="weekday-row">
+      <div class="weekday">Sun</div>
+      <div class="weekday">Mon</div>
+      <div class="weekday">Tue</div>
+      <div class="weekday">Wed</div>
+      <div class="weekday">Thu</div>
+      <div class="weekday">Fri</div>
+      <div class="weekday">Sat</div>
+    </div>
+    <div id="grid" class="grid"></div>
+  </main>
 
-  <label for="mes">Mês:</label>
-  <select id="mes" onchange="atualizarCalendario()">
-    <option value="janeiro">Janeiro</option>
-    <option value="fevereiro">Fevereiro</option>
-    <option value="marco">Março</option>
-    <option value="abril">Abril</option>
-    <option value="maio">Maio</option>
-    <option value="junho">Junho</option>
-    <option value="julho">Julho</option>
-    <option value="agosto">Agosto</option>
-    <option value="setembro">Setembro</option>
-    <option value="outubro">Outubro</option>
-    <option value="novembro">Novembro</option>
-    <option value="dezembro">Dezembro</option>
-  </select>
+  <!-- Event Modal -->
+  <div id="eventModal" class="modal" aria-hidden="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">Add event</h2>
+        <button class="icon-btn" id="closeModalBtn" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="eventForm">
+          <div class="form-row">
+            <label>Date</label>
+            <input type="text" id="eventDate" readonly/>
+          </div>
+          <div class="form-row">
+            <label>Event name</label>
+            <input type="text" id="eventName" placeholder="e.g., Team Meeting" required/>
+          </div>
+          <div class="form-row">
+            <label>Details (optional)</label>
+            <textarea id="eventDetails" rows="3" placeholder="Notes or description"></textarea>
+          </div>
+          <div class="form-row">
+            <label>Color (auto by name, editable in 'Manage colors')</label>
+            <input type="color" id="eventColor" disabled/>
+          </div>
+          <div class="actions">
+            <button type="submit" class="btn">Save</button>
+            <button type="button" class="btn btn-outline" id="deleteEventBtn" style="display:none">Delete</button>
+          </div>
+        </form>
 
-  <!-- Formulário para adicionar eventos -->
-  <h2>Adicionar Evento</h2>
-  <input type="text" id="nomeEvento" placeholder="Nome do evento">
-  <input type="date" id="dataEvento">
-  <input type="color" id="corEvento" value="#FF5733">
-  <button onclick="adicionarEvento()">Adicionar</button>
-
-  <!-- Área do calendário -->
-  <div id="calendario">
-    <object id="svgCalendario" type="image/svg+xml" data="calendario_2025.svg"></object>
+        <div id="existingEvents">
+          <h3>Events on this day</h3>
+          <ul id="eventList"></ul>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <script>
-    const coresPorNome = {}; // garante cor consistente por nome
+  <!-- Manage Colors Modal -->
+  <div id="colorsModal" class="modal" aria-hidden="true">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Manage event colors</h2>
+        <button class="icon-btn" id="closeColorsBtn" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>Colors are tied to event names. Changing a color updates all entries with that name.</p>
+        <div class="form-row">
+          <input id="newEventKey" type="text" placeholder="New event name (exact match)"/>
+          <input id="newEventColor" type="color" value="#2f80ed"/>
+          <button id="addColorMapBtn" class="btn">Add</button>
+        </div>
+        <ul id="colorMapList" class="color-map-list"></ul>
+      </div>
+    </div>
+  </div>
 
-    function atualizarCalendario() {
-      const ano = document.getElementById("ano").value;
-      const obj = document.getElementById("svgCalendario");
-      obj.data = "calendario_" + ano + ".svg";
-    }
+  <footer class="footer">
+    <small>Planner Calendar 2025–2026</small>
+  </footer>
 
-    function adicionarEvento() {
-      const nome = document.getElementById("nomeEvento").value.trim();
-      const data = document.getElementById("dataEvento").value;
-      const corEscolhida = document.getElementById("corEvento").value;
-      if (!nome || !data) { alert("Preencha nome e data!"); return; }
-
-      // cor consistente por nome
-      if (!coresPorNome[nome]) coresPorNome[nome] = corEscolhida;
-      const cor = coresPorNome[nome];
-
-      const obj = document.getElementById("svgCalendario");
-      const svgDoc = obj.contentDocument;
-      if (!svgDoc) return;
-
-      const diaEl = svgDoc.getElementById("dia-" + data);
-      if (!diaEl) { alert("Data não encontrada no calendário!"); return; }
-
-      // criar texto do evento
-      const eventoId = "evento-" + Date.now();
-      const evento = svgDoc.createElementNS("http://www.w3.org/2000/svg","text");
-      evento.setAttribute("id", eventoId);
-      evento.setAttribute("x", parseInt(diaEl.getAttribute("x")) + 20);
-      evento.setAttribute("y", parseInt(diaEl.getAttribute("y")) + 12);
-      evento.setAttribute("fill", cor);
-      evento.setAttribute("class","evento");
-      evento.textContent = nome;
-
-      // botão de remover
-      const remover = svgDoc.createElementNS("http://www.w3.org/2000/svg","text");
-      remover.setAttribute("x", parseInt(diaEl.getAttribute("x")) + 80);
-      remover.setAttribute("y", parseInt(diaEl.getAttribute("y")) + 12);
-      remover.setAttribute("fill","red");
-      remover.setAttribute("class","evento");
-      remover.textContent = "❌";
-      remover.onclick = () => {
-        evento.remove();
-        remover.remove();
-      };
-
-      diaEl.parentNode.appendChild(evento);
-      diaEl.parentNode.appendChild(remover);
-    }
-
-    // Inicializa
-    atualizarCalendario();
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
