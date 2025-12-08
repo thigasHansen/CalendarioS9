@@ -1,52 +1,52 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Planner Calendar 2025–2026</title>
+  <title>Planner Dinastia</title>
   <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
   <header class="topbar">
     <div class="controls">
       <label>
-        Year
+        Ano
         <select id="yearSelect"></select>
       </label>
       <label>
-        Month
+        Mês
         <select id="monthSelect">
-          <option value="0">January</option>
-          <option value="1">February</option>
-          <option value="2">March</option>
-          <option value="3">April</option>
-          <option value="4">May</option>
-          <option value="5">June</option>
-          <option value="6">July</option>
-          <option value="7">August</option>
-          <option value="8">September</option>
-          <option value="9">October</option>
-          <option value="10">November</option>
-          <option value="11">December</option>
+          <option value="0">Janeiro</option>
+          <option value="1">Fevereiro</option>
+          <option value="2">Março</option>
+          <option value="3">Abril</option>
+          <option value="4">Maio</option>
+          <option value="5">Junho</option>
+          <option value="6">Julho</option>
+          <option value="7">Agosto</option>
+          <option value="8">Setembro</option>
+          <option value="9">Outubro</option>
+          <option value="10">Novembro</option>
+          <option value="11">Dezembro</option>
         </select>
       </label>
-      <button id="todayBtn" class="btn">Today</button>
+      <button id="todayBtn" class="btn">Hoje</button>
     </div>
     <h1 id="viewTitle"></h1>
     <div class="legend">
-      <button id="manageColorsBtn" class="btn btn-outline">Manage colors</button>
+      <button id="manageColorsBtn" class="btn btn-outline">Gerenciar cores</button>
     </div>
   </header>
 
   <main id="calendar">
     <div class="weekday-row">
-      <div class="weekday">Sun</div>
-      <div class="weekday">Mon</div>
-      <div class="weekday">Tue</div>
-      <div class="weekday">Wed</div>
-      <div class="weekday">Thu</div>
-      <div class="weekday">Fri</div>
-      <div class="weekday">Sat</div>
+      <div class="weekday">Dom</div>
+      <div class="weekday">Seg</div>
+      <div class="weekday">Ter</div>
+      <div class="weekday">Qua</div>
+      <div class="weekday">Qui</div>
+      <div class="weekday">Sex</div>
+      <div class="weekday">Sáb</div>
     </div>
     <div id="grid" class="grid"></div>
   </main>
@@ -55,35 +55,35 @@
   <div id="eventModal" class="modal" aria-hidden="true">
     <div class="modal-content">
       <div class="modal-header">
-        <h2 id="modalTitle">Add event</h2>
-        <button class="icon-btn" id="closeModalBtn" aria-label="Close">✕</button>
+        <h2 id="modalTitle">Adicionar evento</h2>
+        <button class="icon-btn" id="closeModalBtn" aria-label="Fechar">✕</button>
       </div>
       <div class="modal-body">
         <form id="eventForm">
           <div class="form-row">
-            <label>Date</label>
+            <label>Data</label>
             <input type="text" id="eventDate" readonly/>
           </div>
           <div class="form-row">
-            <label>Event name</label>
-            <input type="text" id="eventName" placeholder="e.g., Team Meeting" required/>
+            <label>Nome do evento</label>
+            <input type="text" id="eventName" placeholder="Ex.: Reunião de equipe" required/>
           </div>
           <div class="form-row">
-            <label>Details (optional)</label>
-            <textarea id="eventDetails" rows="3" placeholder="Notes or description"></textarea>
+            <label>Detalhes (opcional)</label>
+            <textarea id="eventDetails" rows="3" placeholder="Notas ou descrição"></textarea>
           </div>
           <div class="form-row">
-            <label>Color (auto by name, editable in 'Manage colors')</label>
+            <label>Cor (automática pelo nome, editável em 'Gerenciar cores')</label>
             <input type="color" id="eventColor" disabled/>
           </div>
           <div class="actions">
-            <button type="submit" class="btn">Save</button>
-            <button type="button" class="btn btn-outline" id="deleteEventBtn" style="display:none">Delete</button>
+            <button type="submit" class="btn">Salvar</button>
+            <button type="button" class="btn btn-outline" id="deleteEventBtn" style="display:none">Excluir</button>
           </div>
         </form>
 
         <div id="existingEvents">
-          <h3>Events on this day</h3>
+          <h3>Eventos neste dia</h3>
           <ul id="eventList"></ul>
         </div>
       </div>
@@ -94,15 +94,15 @@
   <div id="colorsModal" class="modal" aria-hidden="true">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>Manage event colors</h2>
-        <button class="icon-btn" id="closeColorsBtn" aria-label="Close">✕</button>
+        <h2>Gerenciar cores de eventos</h2>
+        <button class="icon-btn" id="closeColorsBtn" aria-label="Fechar">✕</button>
       </div>
       <div class="modal-body">
-        <p>Colors are tied to event names. Changing a color updates all entries with that name.</p>
+        <p>As cores são vinculadas ao nome do evento. Alterar uma cor atualiza todas as entradas com esse nome.</p>
         <div class="form-row">
-          <input id="newEventKey" type="text" placeholder="New event name (exact match)"/>
+          <input id="newEventKey" type="text" placeholder="Novo nome de evento (igual ao existente)"/>
           <input id="newEventColor" type="color" value="#2f80ed"/>
-          <button id="addColorMapBtn" class="btn">Add</button>
+          <button id="addColorMapBtn" class="btn">Adicionar</button>
         </div>
         <ul id="colorMapList" class="color-map-list"></ul>
       </div>
@@ -110,7 +110,7 @@
   </div>
 
   <footer class="footer">
-    <small>Planner Calendar 2025–2026</small>
+    <small>Calendário Planejador 2025–2026</small>
   </footer>
 
   <script src="script.js"></script>
