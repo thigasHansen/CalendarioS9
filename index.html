@@ -1,155 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Planner 2025–2026</title>
-  <link rel="stylesheet" href="styles.css" />
-  <!-- Supabase JS client -->
-  <script src="https://unpkg.com/@supabase/supabase-js@2.46.1/dist/umd/supabase.js"></script>
+  <meta charset="UTF-8" />
+  <title>Calendar (Dec 2025 – Dec 2026)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="style.css" rel="stylesheet" />
+  <!-- Supabase JS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-  <div id="app">
-    <!-- Auth gate -->
-    <div id="auth-view" class="centered">
-      <div class="card">
-        <h1>Sign in</h1>
-        <p class="muted">Use email and password to access your planner.</p>
-        <form id="auth-form">
-          <label>Email
-            <input type="email" id="email" placeholder="you@example.com" required />
-          </label>
-          <label>Password
-            <input type="password" id="password" placeholder="••••••••" required />
-          </label>
-          <div class="row">
-            <button type="submit" id="sign-in-btn">Sign in</button>
-            <button type="button" id="sign-up-btn" class="secondary">Sign up</button>
+  <header class="app-header">
+    <div class="title">Calendar: December 2025 – December 2026</div>
+    <div class="controls">
+      <button id="prevMonthBtn" class="nav-btn">Prev</button>
+      <div id="currentMonthLabel" class="month-label"></div>
+      <button id="nextMonthBtn" class="nav-btn">Next</button>
+    </div>
+    <div class="legend">
+      <div class="legend-title">Name color legend</div>
+      <div id="legendItems" class="legend-items"></div>
+    </div>
+  </header>
+
+  <main class="calendar-container">
+    <div class="calendar">
+      <div class="calendar-grid" id="calendarGrid"></div>
+    </div>
+  </main>
+
+  <!-- Modal: Add/Edit Entry -->
+  <div id="entryModal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalTitle">Add entry</h3>
+        <button class="close-btn" id="closeModalBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="entryForm">
+          <input type="hidden" id="entryId" />
+          <div class="form-row">
+            <label for="entryDate"><span class="req">*</span>Date</label>
+            <input type="date" id="entryDate" required />
           </div>
-          <p id="auth-error" class="error"></p>
+          <div class="form-row">
+            <label for="entryName"><span class="req">*</span>Name</label>
+            <input type="text" id="entryName" placeholder="e.g., Sprint, Release, Dentist" required />
+          </div>
+          <div class="form-row">
+            <label for="entryTitle"><span class="req">*</span>Title</label>
+            <input type="text" id="entryTitle" placeholder="Short title" required />
+          </div>
+          <div class="form-row">
+            <label for="entryComment">Comment (hover tooltip)</label>
+            <textarea id="entryComment" rows="3" placeholder="Extra details (optional)"></textarea>
+          </div>
+
+          <div class="form-row">
+            <label for="entryColor">Color for name</label>
+            <input type="color" id="entryColor" />
+            <small class="help">Changing this updates all entries with the same name.</small>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="primary-btn" id="saveEntryBtn">Save</button>
+            <button type="button" class="secondary-btn" id="deleteEntryBtn">Delete</button>
+          </div>
         </form>
       </div>
     </div>
-
-    <!-- Main app -->
-    <div id="main-view" class="hidden">
-      <header class="app-header">
-        <div class="left">
-          <h1 id="title">Monthly Planner</h1>
-          <p id="user-email" class="muted"></p>
-        </div>
-        <div class="controls">
-          <label>
-            Year
-            <select id="year-select"></select>
-          </label>
-          <label>
-            Month
-            <select id="month-select"></select>
-          </label>
-          <button id="prev-month" class="secondary">◀</button>
-          <button id="next-month" class="secondary">▶</button>
-          <button id="sign-out-btn" class="danger">Sign out</button>
-        </div>
-      </header>
-
-      <main id="calendar-container">
-        <div class="calendar">
-          <div class="weekday-row">
-            <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
-          </div>
-          <div id="days-grid" class="days-grid"></div>
-        </div>
-      </main>
-    </div>
   </div>
 
-  <!-- Modals -->
-  <div id="modal-backdrop" class="modal-backdrop hidden"></div>
+  <!-- Tooltip -->
+  <div id="tooltip" class="tooltip hidden"></div>
 
-  <!-- Add/Edit Event Modal -->
-  <div id="event-modal" class="modal hidden">
-    <div class="modal-content">
-      <h2 id="event-modal-title">Add event</h2>
-      <form id="event-form">
-        <div class="form-row">
-          <label>Event name
-            <input type="text" id="event-name" required placeholder="e.g., Team Meeting" />
-          </label>
-          <label>Note
-            <input type="text" id="event-note" placeholder="optional notes" />
-          </label>
-        </div>
+  <!-- Floating add button -->
+  <button id="addEntryBtn" class="fab">+</button>
 
-        <div class="form-row">
-          <label>Color
-            <input type="color" id="event-color" />
-          </label>
-          <p class="muted">Color is tied to the event name. Change it once to update everywhere.</p>
-        </div>
-
-        <div class="tabs">
-          <button type="button" class="tab active" data-tab="single">Single day</button>
-          <button type="button" class="tab" data-tab="recurring">Recurring</button>
-        </div>
-
-        <div id="single-pane">
-          <label>Date
-            <input type="date" id="single-date" required />
-          </label>
-        </div>
-
-        <div id="recurring-pane" class="hidden">
-          <div class="form-row">
-            <label>Start date
-              <input type="date" id="rec-start" />
-            </label>
-            <label>End date
-              <input type="date" id="rec-end" />
-            </label>
-          </div>
-          <label>Frequency
-            <select id="rec-frequency">
-              <option value="DAILY">Daily</option>
-              <option value="WEEKLY">Weekly</option>
-              <option value="MONTHLY">Monthly</option>
-              <option value="CUSTOM">Custom RRULE</option>
-            </select>
-          </label>
-          <div id="rec-weekly" class="sub-pane hidden">
-            <p class="muted">Choose weekdays</p>
-            <div class="weekday-checkboxes">
-              <label><input type="checkbox" value="MO" />Mon</label>
-              <label><input type="checkbox" value="TU" />Tue</label>
-              <label><input type="checkbox" value="WE" />Wed</label>
-              <label><input type="checkbox" value="TH" />Thu</label>
-              <label><input type="checkbox" value="FR" />Fri</label>
-              <label><input type="checkbox" value="SA" />Sat</label>
-              <label><input type="checkbox" value="SU" />Sun</label>
-            </div>
-          </div>
-          <div id="rec-interval" class="sub-pane">
-            <label>Interval
-              <input type="number" id="rec-interval-input" min="1" value="1" />
-            </label>
-          </div>
-          <div id="rec-custom" class="sub-pane hidden">
-            <label>RRULE
-              <input type="text" id="rrule-custom" placeholder="FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,WE" />
-            </label>
-          </div>
-        </div>
-
-        <div class="row right">
-          <button type="button" id="delete-event-btn" class="danger hidden">Delete</button>
-          <button type="button" id="cancel-event-btn" class="secondary">Cancel</button>
-          <button type="submit" id="save-event-btn">Save</button>
-        </div>
-        <p id="event-error" class="error"></p>
-      </form>
-    </div>
-  </div>
-
-  <script src="script.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
