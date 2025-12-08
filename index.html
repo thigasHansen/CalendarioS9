@@ -1,26 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Calendar with Events</title>
+  <title>Calendário com Eventos</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="style.css" />
-  <!-- Supabase JS via CDN -->
+  <!-- Supabase JS via CDN (UMD exposes `supabase`) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.10/dist/umd/supabase.js"></script>
 </head>
 <body>
   <header class="topbar">
-    <h1 id="monthYear">Calendar</h1>
+    <h1 id="monthYear">Calendário</h1>
     <div class="controls">
-      <button id="prevBtn">Previous</button>
-      <button id="nextBtn">Next</button>
-      <button id="todayBtn">Today</button>
+      <button id="prevBtn">Anterior</button>
+      <button id="nextBtn">Próximo</button>
+      <button id="todayBtn">Hoje</button>
     </div>
     <div class="budget">
-      <div class="budget-title">Today's budget</div>
+      <div class="budget-title">Orçamento de hoje</div>
       <div id="budgetValue">R$ 2.000.000,00</div>
-      <div class="budget-sub">Spent: <span id="spentValue">R$ 0,00</span></div>
-      <div class="budget-remaining">Remaining: <span id="remainingValue">R$ 2.000.000,00</span></div>
+      <div class="budget-sub">Gasto: <span id="spentValue">R$ 0,00</span></div>
+      <div class="budget-remaining">Restante: <span id="remainingValue">R$ 2.000.000,00</span></div>
     </div>
   </header>
 
@@ -28,48 +28,48 @@
     <div id="calendar" class="calendar"></div>
     <section class="event-panel">
       <div class="event-header">
-        <h2 id="selectedDateLabel">Select a date</h2>
-        <button id="newEventBtn">+ New event</button>
+        <h2 id="selectedDateLabel">Selecione uma data</h2>
+        <button id="newEventBtn">+ Novo evento</button>
       </div>
 
       <div id="eventList" class="event-list">
-        <!-- Events for selected date will render here -->
+        <!-- Eventos da data selecionada -->
       </div>
     </section>
   </main>
 
-  <!-- Modal for add/edit event -->
+  <!-- Modal de novo/edição de evento -->
   <div id="eventModal" class="modal hidden">
     <div class="modal-content">
       <div class="modal-header">
-        <h3 id="modalTitle">New event</h3>
+        <h3 id="modalTitle">Novo evento</h3>
         <button class="close-btn" id="closeModalBtn">✕</button>
       </div>
       <form id="eventForm">
         <div class="form-row">
-          <label for="eventName">Name</label>
-          <input type="text" id="eventName" name="name" placeholder="e.g., Launch" required />
+          <label for="eventName">Nome</label>
+          <input type="text" id="eventName" name="name" placeholder="ex.: Lançamento" required />
         </div>
         <div class="form-row">
-          <label for="eventDescription">Description</label>
-          <textarea id="eventDescription" name="description" placeholder="Optional"></textarea>
+          <label for="eventDescription">Descrição</label>
+          <textarea id="eventDescription" name="description" placeholder="Opcional"></textarea>
         </div>
         <div class="form-row">
-          <label for="eventDate">Date</label>
+          <label for="eventDate">Data</label>
           <input type="date" id="eventDate" name="date" required />
         </div>
         <div class="form-row">
-          <label for="eventValue">Value (R$)</label>
+          <label for="eventValue">Valor (R$)</label>
           <input type="number" id="eventValue" name="value" step="0.01" min="0" placeholder="0,00" />
         </div>
         <div class="form-row color-row">
-          <label for="eventColor">Color</label>
+          <label for="eventColor">Cor</label>
           <input type="color" id="eventColor" name="color" />
-          <button type="button" id="autoColorBtn">Auto from name</button>
+          <button type="button" id="autoColorBtn">Automática pelo nome</button>
         </div>
         <div class="form-actions">
-          <button type="submit" id="saveEventBtn">Save</button>
-          <button type="button" id="deleteEventBtn" class="danger hidden">Delete</button>
+          <button type="submit" id="saveEventBtn">Salvar</button>
+          <button type="button" id="deleteEventBtn" class="danger hidden">Excluir</button>
         </div>
         <input type="hidden" id="eventId" />
       </form>
