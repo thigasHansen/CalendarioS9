@@ -35,6 +35,7 @@
     <h1 id="viewTitle"></h1>
     <div class="legend">
       <button id="manageColorsBtn" class="btn btn-outline">Gerenciar cores</button>
+      <button id="signOutBtn" class="btn btn-outline">Sair</button>
     </div>
   </header>
 
@@ -73,24 +74,6 @@
             <textarea id="eventDetails"></textarea>
           </div>
           <div class="form-row">
-            <label>Recorrência</label>
-            <select id="eventRecurrence">
-              <option value="">Nenhuma</option>
-              <option value="daily">Diária</option>
-              <option value="weekly">Semanal</option>
-              <option value="monthly">Mensal</option>
-              <option value="yearly">Anual</option>
-            </select>
-          </div>
-          <div class="form-row">
-            <label>Intervalo</label>
-            <input type="number" id="eventInterval" min="1" value="1"/>
-          </div>
-          <div class="form-row">
-            <label>Até (opcional)</label>
-            <input type="date" id="eventUntil"/>
-          </div>
-          <div class="form-row">
             <label>Cor (automática pelo nome, editável em 'Gerenciar cores')</label>
             <input type="color" id="eventColor" disabled/>
           </div>
@@ -122,6 +105,32 @@
           <button id="addColorMapBtn" class="btn">Adicionar</button>
         </div>
         <ul id="colorMapList" class="color-map-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Autenticação -->
+  <div id="authModal" class="modal" aria-hidden="false">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Entrar</h2>
+      </div>
+      <div class="modal-body">
+        <form id="authForm">
+          <div class="form-row">
+            <label>Email</label>
+            <input type="email" id="authEmail" required />
+          </div>
+          <div class="form-row">
+            <label>Senha</label>
+            <input type="password" id="authPassword" required />
+          </div>
+          <div class="actions">
+            <button type="submit" class="btn" id="signInBtn">Entrar</button>
+            <button type="button" class="btn btn-outline" id="signUpBtn">Criar conta</button>
+          </div>
+          <p id="authError" class="error" style="display:none"></p>
+        </form>
       </div>
     </div>
   </div>
