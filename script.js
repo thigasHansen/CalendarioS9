@@ -1,6 +1,6 @@
 // --------- CONFIG ---------
 const SUPABASE_URL = "https://whrugfiojjbxkzjvtgjs.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndocnVnZmlvampieGt6anZ0Z2pzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUyMDczNzQsImV4cCI6MjA4MDc4MzM3NH0.F4DlCShH5Y2xGWEkPZaBorUllKOPmunUJvtA2KEAVmE";
+const SUPABASE_ANON_KEY = "sb_publishable_3qJoVWoF-Kfn1n2dAi0RgA_gqT-j5uN";
 const BASE_BUDGET = 2000000.00; // R$ 2.000.000,00
 
 // Initialize supabase
