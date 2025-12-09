@@ -81,6 +81,12 @@ main {
   flex-direction: column;
   gap: 6px;
   cursor: pointer;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.day-cell:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 6px #2b6cb0;
 }
 
 .day-number {
@@ -184,10 +190,7 @@ button.danger:hover {
   justify-content: center;
   padding: 16px;
 }
-
-.modal.hidden {
-  display: none;
-}
+.modal.hidden { display: none; }
 
 .modal-content {
   width: 100%;
@@ -224,6 +227,19 @@ button.danger:hover {
 
 .close-btn {
   background: #1a1f2a;
+}
+
+/* Highlight for today's date */
+.today {
+  border: 2px solid var(--accent);
+  background: #1a2230;
+}
+
+/* Highlight for selected date */
+.selected {
+  border: 2px solid #ffcc00;   /* golden border */
+  background: #2a2f38;         /* darker background */
+  box-shadow: 0 0 8px #ffcc00; /* subtle glow */
 }
 
 @media (max-width: 900px) {
