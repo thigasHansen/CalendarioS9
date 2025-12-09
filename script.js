@@ -356,4 +356,4 @@ async function refreshMonth() {
     renderCalendar(currentYear, currentMonth);
   }
 }
-  )();
+  ();
