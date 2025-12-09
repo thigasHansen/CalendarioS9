@@ -5,7 +5,7 @@
   <title>Calendário com Eventos</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="style.css" />
-  <!-- Supabase JS via CDN (UMD exposes `supabase`) -->
+  <!-- Supabase JS via CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.10/dist/umd/supabase.js"></script>
 </head>
 <body>
@@ -17,7 +17,7 @@
       <button id="todayBtn">Hoje</button>
     </div>
     <div class="budget">
-      <div class="budget-title">Orçamento de hoje</div>
+      <div class="budget-title">Orçamento da data</div>
       <div id="budgetValue">R$ 2.000.000,00</div>
       <div class="budget-sub">Gasto: <span id="spentValue">R$ 0,00</span></div>
       <div class="budget-remaining">Restante: <span id="remainingValue">R$ 2.000.000,00</span></div>
@@ -25,13 +25,15 @@
   </header>
 
   <main>
+    <!-- Calendar grid -->
     <div id="calendar" class="calendar"></div>
+
+    <!-- Side panel with events -->
     <section class="event-panel">
       <div class="event-header">
         <h2 id="selectedDateLabel">Selecione uma data</h2>
         <button id="newEventBtn">+ Novo evento</button>
       </div>
-
       <div id="eventList" class="event-list">
         <!-- Eventos da data selecionada -->
       </div>
@@ -76,6 +78,7 @@
     </div>
   </div>
 
+  <!-- JS logic -->
   <script src="script.js"></script>
 </body>
 </html>
