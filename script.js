@@ -1,7 +1,7 @@
 // script.js
 (function () {
-  const DAILY_LIMIT = 2000000.00; // Brazilian style display handled separately
-  const START_MONTH = new Date(2025, 11, 1); // Dec 2025 (month is 0-based)
+  const DAILY_LIMIT = 2000000.00; // display in BRL later
+  const START_MONTH = new Date(2025, 11, 1); // Dec 2025
   const END_MONTH = new Date(2026, 11, 1);   // Dec 2026
 
   const client = window.supabaseClient;
@@ -31,6 +31,15 @@
     confirmDeleteModal: document.getElementById('confirmDeleteModal'),
     confirmDeleteBtn: document.getElementById('confirmDeleteBtn'),
     cancelDeleteBtn: document.getElementById('cancelDeleteBtn'),
+
+    // Auth
+    authPanel: document.getElementById('authPanel'),
+    authStatus: document.getElementById('authStatus'),
+    authEmail: document.getElementById('authEmail'),
+    authPassword: document.getElementById('authPassword'),
+    loginBtn: document.getElementById('loginBtn'),
+    signupBtn: document.getElementById('signupBtn'),
+    logoutBtn: document.getElementById('logoutBtn'),
   };
 
   // State
@@ -39,6 +48,7 @@
   let selectedDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   let pendingDeleteId = null;
   let eventsCache = new Map(); // key: ISO date string, value: array of events
+  let userId = null;
 
   // Intl helpers (Brazil)
   const fmtCurrency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -49,10 +59,6 @@
     return a.getFullYear() === b.getFullYear() &&
            a.getMonth() === b.getMonth() &&
            a.getDate() === b.getDate();
-  }
-
-  function monthKey(date) {
-    return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}`;
   }
 
   function toISODate(d) {
@@ -67,12 +73,12 @@
       hash = hash & hash;
     }
     const hue = Math.abs(hash) % 360;
-    return `hsl(${hue} 70% 50%)`; // vibrant
+    return `hsl(${hue} 70% 50%)`;
   }
 
   function parseBRL(input) {
     // Accept "1.234.567,89" or "1234567,89" or "1234567.89"
-    const normalized = input.replace(/\./g, '').replace(',', '.');
+    const normalized = input.replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
     const n = Number(normalized);
     if (Number.isNaN(n)) return null;
     return n;
@@ -93,6 +99,10 @@
   }
 
   async function loadMonthEvents(date) {
+    if (!userId) {
+      eventsCache.clear();
+      return;
+    }
     const first = new Date(date.getFullYear(), date.getMonth(), 1);
     const last = new Date(date.getFullYear(), date.getMonth()+1, 0);
     const fromISO = toISODate(first);
@@ -101,13 +111,14 @@
     const { data, error } = await client
       .from('events')
       .select('*')
+      .eq('user_id', userId)
       .gte('event_date', fromISO)
       .lte('event_date', toISO)
       .order('event_date', { ascending: true })
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Error loading events', error);
+      console.error('Erro ao carregar eventos', error);
       return;
     }
     eventsCache.clear();
@@ -128,16 +139,14 @@
 
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
-    const startWeekDay = (firstDay.getDay()); // 0=Sun
+    const startWeekDay = firstDay.getDay(); // 0=Sun
 
-    // Fill prev month blanks
     for (let i = 0; i < startWeekDay; i++) {
       const blank = document.createElement('div');
       blank.className = 'day-cell';
       els.calendarGrid.appendChild(blank);
     }
 
-    // Days
     for (let d = 1; d <= lastDay.getDate(); d++) {
       const cellDate = new Date(year, month, d);
       const cell = document.createElement('div');
@@ -174,7 +183,6 @@
         pill.appendChild(value);
 
         pill.addEventListener('click', () => {
-          // Toggle in the side list; also show description there.
           showEventDetails(ev);
         });
 
@@ -186,9 +194,10 @@
 
       cell.addEventListener('click', () => {
         selectedDate = cellDate;
-        updateSelectedHighlight();
         renderSideList();
         updateBudgetPanel();
+        // Re-render to apply selected styling
+        renderMonth(currentMonth);
       });
 
       els.calendarGrid.appendChild(cell);
@@ -196,15 +205,7 @@
 
     renderSideList();
     updateBudgetPanel();
-  }
-
-  function updateSelectedHighlight() {
-    const cells = els.calendarGrid.querySelectorAll('.day-cell');
-    cells.forEach((cell, idx) => {
-      cell.classList.remove('selected');
-    });
-    // Re-apply selected by recomputing render; simpler approach:
-    renderMonth(currentMonth);
+    clampMonthNav();
   }
 
   function renderSideList() {
@@ -216,6 +217,7 @@
     events.forEach(ev => {
       const item = document.createElement('div');
       item.className = 'event-item';
+      item.style.borderLeftColor = ev.color ? ev.color : colorFromName(ev.name);
 
       const header = document.createElement('div');
       header.className = 'header';
@@ -226,43 +228,33 @@
 
       const editBtn = document.createElement('button');
       editBtn.textContent = 'Editar';
-      editBtn.addEventListener('click', () => openEditModal(ev));
+      editBtn.addEventListener('click', (e) => { e.stopPropagation(); openEditModal(ev); });
 
       const delBtn = document.createElement('button');
       delBtn.textContent = 'Excluir';
       delBtn.className = 'danger';
-      delBtn.addEventListener('click', () => {
+      delBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
         pendingDeleteId = ev.id;
         els.confirmDeleteModal.showModal();
       });
 
       right.appendChild(editBtn);
       right.appendChild(delBtn);
-
       header.appendChild(left);
       header.appendChild(right);
-
       item.appendChild(header);
 
       if (ev.description && ev.description.trim().length > 0) {
         const desc = document.createElement('div');
         desc.className = 'desc';
         desc.textContent = ev.description;
-        // Hidden until clicked
         desc.style.display = 'none';
-
-        // Clicking anywhere on item toggles description
-        item.addEventListener('click', (e) => {
-          // Avoid toggling when clicking buttons
-          if (e.target === editBtn || e.target === delBtn) return;
+        item.addEventListener('click', () => {
           desc.style.display = (desc.style.display === 'none') ? 'block' : 'none';
         });
-
         item.appendChild(desc);
       }
-
-      // Left color bar consistency
-      item.style.borderLeft = `6px solid ${ev.color ? ev.color : colorFromName(ev.name)}`;
 
       els.eventList.appendChild(item);
     });
@@ -281,6 +273,7 @@
   }
 
   function openNewModal() {
+    if (!userId) { alert('Entre para adicionar eventos.'); return; }
     els.modalTitle.textContent = `Novo evento para ${fmtDate.format(selectedDate)}`;
     els.eventId.value = '';
     els.eventName.value = '';
@@ -301,7 +294,6 @@
   }
 
   function showEventDetails(ev) {
-    // Focus side list item logic handled; optional scrolling could be added.
     renderSideList();
   }
 
@@ -313,6 +305,7 @@
     const color = els.eventColor.value || null;
     const description = els.eventDescription.value.trim();
 
+    if (!userId) { alert('Entre para salvar eventos.'); return; }
     if (!name) { alert('Nome é obrigatório'); return; }
     if (value === null) { alert('Valor inválido'); return; }
     if (value < 0) { alert('Valor deve ser positivo'); return; }
@@ -322,16 +315,15 @@
       value,
       description: description.length ? description : null,
       color: color,
+      user_id: userId,
     };
 
     if (!id) {
-      // Insert for selected date
       payload.event_date = toISODate(selectedDate);
-      const { data, error } = await client.from('events').insert(payload).select('*').single();
+      const { error } = await client.from('events').insert(payload);
       if (error) { alert('Erro ao salvar evento'); console.error(error); return; }
     } else {
-      // Update existing
-      const { data, error } = await client.from('events').update(payload).eq('id', id).select('*').single();
+      const { error } = await client.from('events').update(payload).eq('id', id).eq('user_id', userId);
       if (error) { alert('Erro ao atualizar evento'); console.error(error); return; }
     }
 
@@ -342,7 +334,7 @@
 
   async function deleteEvent() {
     if (!pendingDeleteId) { els.confirmDeleteModal.close(); return; }
-    const { error } = await client.from('events').delete().eq('id', pendingDeleteId);
+    const { error } = await client.from('events').delete().eq('id', pendingDeleteId).eq('user_id', userId);
     if (error) { alert('Erro ao excluir evento'); console.error(error); }
     pendingDeleteId = null;
     els.confirmDeleteModal.close();
@@ -353,20 +345,74 @@
   function clampMonthNav() {
     const prevCandidate = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
     const nextCandidate = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
-
     els.prevMonthBtn.disabled = !inRangeMonth(prevCandidate);
     els.nextMonthBtn.disabled = !inRangeMonth(nextCandidate);
   }
 
   async function gotoMonth(date) {
     currentMonth = new Date(date.getFullYear(), date.getMonth(), 1);
-    // If selected date falls outside currentMonth, keep selected date as is; events panel still shows selected date values.
     clampMonthNav();
     await loadMonthEvents(currentMonth);
     renderMonth(currentMonth);
   }
 
-  // Events
+  // Auth UI logic
+  async function refreshAuthUI() {
+    const { data: { session } } = await client.auth.getSession();
+    userId = session?.user?.id || null;
+
+    if (userId) {
+      els.authStatus.textContent = `Autenticado como: ${session.user.email}`;
+      els.logoutBtn.style.display = 'inline-block';
+      els.loginBtn.style.display = 'none';
+      els.signupBtn.style.display = 'none';
+      els.authEmail.style.display = 'none';
+      els.authPassword.style.display = 'none';
+      els.newEventBtn.disabled = false;
+    } else {
+      els.authStatus.textContent = 'Você não está autenticado.';
+      els.logoutBtn.style.display = 'none';
+      els.loginBtn.style.display = 'inline-block';
+      els.signupBtn.style.display = 'inline-block';
+      els.authEmail.style.display = 'block';
+      els.authPassword.style.display = 'block';
+      els.newEventBtn.disabled = true;
+    }
+  }
+
+  els.loginBtn.addEventListener('click', async () => {
+    const email = els.authEmail.value.trim();
+    const password = els.authPassword.value;
+    if (!email || !password) { alert('Informe email e senha'); return; }
+    const { error } = await client.auth.signInWithPassword({ email, password });
+    if (error) { alert('Erro ao entrar'); console.error(error); return; }
+    await refreshAuthUI();
+    await gotoMonth(currentMonth);
+  });
+
+  els.signupBtn.addEventListener('click', async () => {
+    const email = els.authEmail.value.trim();
+    const password = els.authPassword.value;
+    if (!email || !password) { alert('Informe email e senha'); return; }
+    const { error } = await client.auth.signUp({ email, password });
+    if (error) { alert('Erro ao cadastrar'); console.error(error); return; }
+    alert('Cadastro feito! Verifique seu email para confirmar.');
+  });
+
+  els.logoutBtn.addEventListener('click', async () => {
+    await client.auth.signOut();
+    await refreshAuthUI();
+    eventsCache.clear();
+    renderMonth(currentMonth);
+  });
+
+  // Supabase auth state changes
+  client.auth.onAuthStateChange(async (_event, _session) => {
+    await refreshAuthUI();
+    await gotoMonth(currentMonth);
+  });
+
+  // UI events
   els.prevMonthBtn.addEventListener('click', () => {
     const prev = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
     if (inRangeMonth(prev)) gotoMonth(prev);
@@ -395,9 +441,8 @@
   // Initial render
   renderWeekHeader();
   (async function init() {
-    // Start at December 2025, select today (even if not in Dec 2025)
+    await refreshAuthUI();
     await gotoMonth(START_MONTH);
-    // Ensure selected date is visible and highlighted in the month currently displayed
     renderMonth(currentMonth);
   })();
 })();
