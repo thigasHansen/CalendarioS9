@@ -396,6 +396,16 @@ async function refreshMonth() {
   updateTodayBudget();
 }
 
+// --------- BUDGET UPDATE ----------
+function updateBudgetFor(dateISO) {
+  const dayEvents = eventsCache.filter(e => e.date === dateISO);
+  const spent = dayEvents.reduce((sum, e) => sum + Number(e.value || 0), 0);
+  const remaining = BASE_BUDGET - spent;
+  document.getElementById("budgetValue").textContent = formatBRL(BASE_BUDGET);
+  document.getElementById("spentValue").textContent = formatBRL(spent);
+  document.getElementById("remainingValue").textContent = formatBRL(Math.max(remaining, 0));
+}
+
 // --------- INIT ---------
 (async function init() {
   const today = new Date();
