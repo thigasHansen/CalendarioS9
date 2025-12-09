@@ -223,3 +223,4 @@ button.danger:hover {
 @media (max-width: 900px) {
   main { grid-template-columns: 1fr; }
   .budget { position: static; }
+}
