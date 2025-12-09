@@ -3,12 +3,13 @@ const SUPABASE_URL = "https://whrugfiojjbxkzjvtgjs.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_3qJoVWoF-Kfn1n2dAi0RgA_gqT-j5uN";
 const BASE_BUDGET = 2000000.00; // R$ 2.000.000,00
 
+// Supabase client (global from UMD script)
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // --------- STATE ---------
 let currentYear = new Date().getFullYear();
 let currentMonth = new Date().getMonth();
-let selectedDate = dateToISO(new Date()); // default para hoje
+let selectedDate = dateToISO(new Date()); // default to today
 let eventsCache = [];
 
 // --------- UTIL ---------
@@ -16,10 +17,26 @@ function pad(n) { return n.toString().padStart(2, "0"); }
 function dateToISO(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
 function parseISODateLocal(iso) {
   const [y, m, d] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d); // evita shift por UTC
+  return new Date(y, m - 1, d); // local date, avoids UTC shift
 }
 function formatBRL(value) {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+function nameToColor(name) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash) % 360;
+  return hslToHex(hue, 65, 55);
+}
+function hslToHex(h, s, l) {
+  s /= 100; l /= 100;
+  const k = n => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  const rgb = [Math.round(255 * f(0)), Math.round(255 * f(8)), Math.round(255 * f(4))];
+  return "#" + rgb.map(x => x.toString(16).padStart(2, "0")).join("");
 }
 
 // --------- DATA ---------
@@ -55,11 +72,13 @@ async function deleteEvent(id) {
 // --------- RENDER ---------
 function renderMonthHeader(year, month) {
   const months = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-  document.getElementById("monthYear").textContent = `${months[month]} ${year}`;
+  const el = document.getElementById("monthYear");
+  if (el) el.textContent = `${months[month]} ${year}`;
 }
 
 function renderCalendar(year, month) {
   const cal = document.getElementById("calendar");
+  if (!cal) return;
   cal.innerHTML = "";
 
   const daysOfWeek = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
@@ -72,8 +91,7 @@ function renderCalendar(year, month) {
 
   const firstDayIndex = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month+1, 0).getDate();
-
-  for (let i=0; i<firstDayIndex; i++) {
+  for (let i = 0; i < firstDayIndex; i++) {
     const empty = document.createElement("div");
     empty.className = "day-cell";
     empty.style.visibility = "hidden";
@@ -82,7 +100,7 @@ function renderCalendar(year, month) {
 
   const todayISO = dateToISO(new Date());
 
-  for (let d=1; d<=daysInMonth; d++) {
+  for (let d = 1; d <= daysInMonth; d++) {
     const cell = document.createElement("div");
     cell.className = "day-cell";
     const dateISO = `${year}-${pad(month+1)}-${pad(d)}`;
@@ -104,7 +122,7 @@ function renderCalendar(year, month) {
     });
     cell.appendChild(evWrap);
 
-    // Click selects date and redraws highlights
+    // Select date and redraw highlights
     cell.addEventListener("click", () => {
       selectedDate = dateISO;
       renderSelectedDatePanel();
@@ -123,6 +141,8 @@ function renderCalendar(year, month) {
 function renderSelectedDatePanel() {
   const label = document.getElementById("selectedDateLabel");
   const list = document.getElementById("eventList");
+  if (!label || !list) return;
+
   list.innerHTML = "";
 
   if (!selectedDate) {
@@ -251,34 +271,20 @@ document.getElementById("newEventBtn").addEventListener("click", () => {
   openCreateModal(selectedDate);
 });
 document.getElementById("closeModalBtn").addEventListener("click", hideModal);
-
+document.getElementById("deleteEventBtn").addEventListener("click", async () => {
+  const id = document.getElementById("eventId").value;
+  if (!id) return;
+  await deleteEvent(id);
+  hideModal();
+  await refreshMonth();
+  renderSelectedDatePanel();
+  updateBudgetFor(selectedDate);
+});
 document.getElementById("autoColorBtn").addEventListener("click", () => {
   const name = document.getElementById("eventName").value.trim();
   if (!name) return;
-  // simple deterministic color by name
-  const color = nameToColor(name);
-  document.getElementById("eventColor").value = color;
+  document.getElementById("eventColor").value = nameToColor(name);
 });
-
-// Name -> color helper
-function nameToColor(name) {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const hue = Math.abs(hash) % 360;
-  return hslToHex(hue, 65, 55);
-}
-function hslToHex(h, s, l) {
-  s /= 100; l /= 100;
-  const k = n => (n + h / 30) % 12;
-  const a = s * Math.min(l, 1 - l);
-  const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
-  const rgb = [Math.round(255 * f(0)), Math.round(255 * f(8)), Math.round(255 * f(4))];
-  return "#" + rgb.map(x => x.toString(16).padStart(2, "0")).join("");
-}
-
-// Submit
 document.getElementById("eventForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const id = document.getElementById("eventId").value;
@@ -298,17 +304,6 @@ document.getElementById("eventForm").addEventListener("submit", async (e) => {
 
   hideModal();
   selectedDate = date;
-  await refreshMonth();
-  renderSelectedDatePanel();
-  updateBudgetFor(selectedDate);
-});
-
-// Delete via modal button (when editing)
-document.getElementById("deleteEventBtn").addEventListener("click", async () => {
-  const id = document.getElementById("eventId").value;
-  if (!id) return;
-  await deleteEvent(id);
-  hideModal();
   await refreshMonth();
   renderSelectedDatePanel();
   updateBudgetFor(selectedDate);
@@ -341,8 +336,9 @@ async function refreshMonth() {
   renderCalendar(currentYear, currentMonth);
   await loadEventsForMonth(currentYear, currentMonth);
   renderCalendar(currentYear, currentMonth);
-  if (selectedDate) updateBudgetFor(selectedDate);
-  else {
+  if (selectedDate) {
+    updateBudgetFor(selectedDate);
+  } else {
     selectedDate = dateToISO(new Date());
     updateBudgetFor(selectedDate);
     renderCalendar(currentYear, currentMonth);
