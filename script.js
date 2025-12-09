@@ -3,30 +3,24 @@ const supabase_URL = "https://whrugfiojjbxkzjvtgjs.supabase.co";
 const supabase_ANON_KEY = "sb_publishable_3qJoVWoF-Kfn1n2dAi0RgA_gqT-j5uN";
 const BASE_BUDGET = 2000000.00; // R$ 2.000.000,00
 
-// Initialize supabaseClient (UMD global is `supabaseClient`)
-const supabaseClient = supabase.createClient(supabase_URL, supabase_ANON_KEY);
+// Initialize supabase
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // --------- STATE ---------
 let currentYear = new Date().getFullYear();
 let currentMonth = new Date().getMonth();
 let selectedDate = null; // YYYY-MM-DD
-let eventsCache = []; // All events loaded for current month
+let eventsCache = []; // Events for the current month
 let nameColorMap = {}; // { name: color }
 
 // --------- UTIL ---------
 function formatBRL(value) {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
-
 function pad(n) { return n.toString().padStart(2, "0"); }
-
 function dateToISO(dateObj) {
-  const y = dateObj.getFullYear();
-  const m = pad(dateObj.getMonth() + 1);
-  const d = pad(dateObj.getDate());
-  return `${y}-${m}-${d}`;
+  return `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())}`;
 }
-
 function randomColorHex(nameSeed = "") {
   let hash = 0;
   for (let i = 0; i < nameSeed.length; i++) {
@@ -47,97 +41,52 @@ function randomColorHex(nameSeed = "") {
   return hslToHex(hue, saturation, lightness);
 }
 
-// --------- supabaseClient DATA ---------
+// --------- SUPABASE DATA ---------
 async function loadNameColors() {
-  const { data, error } = await supabaseClient.from("name_colors").select("*");
-  if (error) {
-    console.error("loadNameColors error", error);
-    return;
-  }
+  const { data } = await supabaseClient.from("name_colors").select("*");
   nameColorMap = {};
-  data.forEach(row => { nameColorMap[row.name] = row.color; });
+  (data || []).forEach(row => { nameColorMap[row.name] = row.color; });
 }
-
 async function upsertNameColor(name, color) {
   nameColorMap[name] = color;
-  const { error } = await supabaseClient
-    .from("name_colors")
-    .upsert({ name, color });
-  if (error) console.error("upsertNameColor error", error);
+  await supabaseClient.from("name_colors").upsert({ name, color });
 }
-
 async function loadEventsForMonth(year, month) {
   const firstDayISO = `${year}-${pad(month + 1)}-01`;
-  const lastDay = new Date(year, month + 1, 0);
-  const lastDayISO = dateToISO(lastDay);
-
-  const { data, error } = await supabaseClient
+  const lastDayISO = dateToISO(new Date(year, month + 1, 0));
+  const { data } = await supabaseClient
     .from("events")
     .select("*")
     .gte("date", firstDayISO)
     .lte("date", lastDayISO)
     .order("date", { ascending: true });
-
-  if (error) {
-    console.error("loadEventsForMonth error", error);
-    eventsCache = [];
-  } else {
-    eventsCache = data || [];
-  }
+  eventsCache = data || [];
 }
-
 async function createEvent(evt) {
-  const { data, error } = await supabaseClient
-    .from("events")
-    .insert(evt)
-    .select()
-    .single();
-  if (error) {
-    console.error("createEvent error", error);
-    return null;
-  }
+  const { data } = await supabaseClient.from("events").insert(evt).select().single();
   if (evt.name && evt.color) await upsertNameColor(evt.name, evt.color);
   return data;
 }
-
 async function updateEvent(id, updates) {
-  const { data, error } = await supabaseClient
-    .from("events")
-    .update(updates)
-    .eq("id", id)
-    .select()
-    .single();
-  if (error) {
-    console.error("updateEvent error", error);
-    return null;
-  }
+  const { data } = await supabaseClient.from("events").update(updates).eq("id", id).select().single();
   if (updates.name && updates.color) await upsertNameColor(updates.name, updates.color);
   return data;
 }
-
 async function deleteEvent(id) {
-  const { error } = await supabaseClient
-    .from("events")
-    .delete()
-    .eq("id", id);
-  if (error) console.error("deleteEvent error", error);
+  await supabaseClient.from("events").delete().eq("id", id);
 }
 
 // --------- RENDER ---------
 function renderMonthHeader(year, month) {
-  const monthNames = [
-    "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
-    "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
-  ];
+  const monthNames = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
   document.getElementById("monthYear").textContent = `${monthNames[month]} ${year}`;
 }
 
 function renderCalendar(year, month) {
   const cal = document.getElementById("calendar");
   cal.innerHTML = "";
-  const daysOfWeek = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
 
-  // Cabeçalhos
+  const daysOfWeek = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
   daysOfWeek.forEach(d => {
     const hd = document.createElement("div");
     hd.className = "day-header";
@@ -145,7 +94,7 @@ function renderCalendar(year, month) {
     cal.appendChild(hd);
   });
 
-  const firstDayIndex = new Date(year, month, 1).getDay(); // 0=Domingo
+  const firstDayIndex = new Date(year, month, 1).getDay(); // 0=Dom
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   for (let i = 0; i < firstDayIndex; i++) {
@@ -180,11 +129,18 @@ function renderCalendar(year, month) {
 
     cell.appendChild(evWrap);
 
+    // Select date on click, no auto-modal
     cell.addEventListener("click", () => {
       selectedDate = dateISO;
       renderSelectedDatePanel();
-      openCreateModal(dateISO);
+      updateBudgetFor(dateISO);
+      // Re-render grid to reflect selected highlight, without refetching
+      renderCalendar(currentYear, currentMonth);
     });
+
+    // Highlight today and selected
+    if (dateISO === dateToISO(new Date())) cell.classList.add("today");
+    if (dateISO === selectedDate) cell.classList.add("selected");
 
     cal.appendChild(cell);
   }
@@ -199,70 +155,76 @@ function renderSelectedDatePanel() {
     label.textContent = "Selecione uma data";
     return;
   }
+
   const d = new Date(selectedDate);
   label.textContent = d.toLocaleDateString("pt-BR", {
     weekday: "long", year: "numeric", month: "long", day: "numeric"
   });
 
   const dayEvents = eventsCache.filter(e => e.date === selectedDate);
+
   if (dayEvents.length === 0) {
     const empty = document.createElement("div");
     empty.className = "event-item";
     empty.textContent = "Sem eventos para esta data.";
     list.appendChild(empty);
-  } else {
-    dayEvents.forEach(e => {
-      const item = document.createElement("div");
-      item.className = "event-item";
-
-      const dot = document.createElement("div");
-      dot.className = "event-color-dot";
-      dot.style.background = e.color || nameColorMap[e.name] || randomColorHex(e.name || "");
-      item.appendChild(dot);
-
-      const info = document.createElement("div");
-      const title = document.createElement("div");
-      title.className = "event-name";
-      title.textContent = e.name;
-      const desc = document.createElement("div");
-      desc.className = "event-desc";
-      desc.textContent = e.description || "";
-      info.appendChild(title);
-      info.appendChild(desc);
-      item.appendChild(info);
-
-      const val = document.createElement("div");
-      val.textContent = e.value ? formatBRL(Number(e.value)) : formatBRL(0);
-      item.appendChild(val);
-
-      const actions = document.createElement("div");
-      actions.className = "event-actions";
-      const editBtn = document.createElement("button");
-      editBtn.textContent = "Editar";
-      editBtn.addEventListener("click", () => openEditModal(e));
-      const delBtn = document.createElement("button");
-      delBtn.textContent = "Excluir";
-      delBtn.className = "danger";
-      delBtn.addEventListener("click", async () => {
-        await deleteEvent(e.id);
-        await refreshMonth();
-        renderSelectedDatePanel();
-        updateTodayBudget();
-      });
-      actions.appendChild(editBtn);
-      actions.appendChild(delBtn);
-      item.appendChild(actions);
-
-      list.appendChild(item);
-    });
+    return;
   }
+
+  dayEvents.forEach(e => {
+    const item = document.createElement("div");
+    item.className = "event-item";
+
+    const dot = document.createElement("div");
+    dot.className = "event-color-dot";
+    dot.style.background = e.color || nameColorMap[e.name] || randomColorHex(e.name || "");
+    item.appendChild(dot);
+
+    const info = document.createElement("div");
+    const title = document.createElement("div");
+    title.className = "event-name";
+    title.textContent = e.name;
+    const desc = document.createElement("div");
+    desc.className = "event-desc";
+    desc.textContent = e.description || "";
+    info.appendChild(title);
+    info.appendChild(desc);
+    item.appendChild(info);
+
+    const val = document.createElement("div");
+    val.textContent = e.value ? formatBRL(Number(e.value)) : formatBRL(0);
+    item.appendChild(val);
+
+    const actions = document.createElement("div");
+    actions.className = "event-actions";
+
+    const editBtn = document.createElement("button");
+    editBtn.textContent = "Editar";
+    editBtn.addEventListener("click", () => openEditModal(e));
+
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "Excluir";
+    delBtn.className = "danger";
+    delBtn.addEventListener("click", async () => {
+      await deleteEvent(e.id);
+      await refreshMonth();
+      renderSelectedDatePanel();
+      updateBudgetFor(selectedDate);
+    });
+
+    actions.appendChild(editBtn);
+    actions.appendChild(delBtn);
+    item.appendChild(actions);
+
+    list.appendChild(item);
+  });
 }
 
-function updateTodayBudget() {
-  const todayISO = dateToISO(new Date());
-  const todaysEvents = eventsCache.filter(e => e.date === todayISO);
-  const spent = todaysEvents.reduce((sum, e) => sum + Number(e.value || 0), 0);
+function updateBudgetFor(dateISO) {
+  const dayEvents = eventsCache.filter(e => e.date === dateISO);
+  const spent = dayEvents.reduce((sum, e) => sum + Number(e.value || 0), 0);
   const remaining = BASE_BUDGET - spent;
+
   document.getElementById("budgetValue").textContent = formatBRL(BASE_BUDGET);
   document.getElementById("spentValue").textContent = formatBRL(spent);
   document.getElementById("remainingValue").textContent = formatBRL(Math.max(remaining, 0));
@@ -317,12 +279,13 @@ function showModal() { modalEl.classList.remove("hidden"); }
 function hideModal() { modalEl.classList.add("hidden"); }
 
 closeModalBtn.addEventListener("click", hideModal);
+
 newEventBtn.addEventListener("click", () => {
   if (!selectedDate) selectedDate = dateToISO(new Date());
   openCreateModal(selectedDate);
 });
 
-autoColorBtn.addEventListener("click", async () => {
+autoColorBtn.addEventListener("click", () => {
   const name = document.getElementById("eventName").value.trim();
   if (!name) return;
   const color = nameColorMap[name] || randomColorHex(name);
@@ -336,7 +299,7 @@ deleteEventBtn.addEventListener("click", async () => {
   hideModal();
   await refreshMonth();
   renderSelectedDatePanel();
-  updateTodayBudget();
+  updateBudgetFor(selectedDate);
 });
 
 eventForm.addEventListener("submit", async (e) => {
@@ -348,11 +311,10 @@ eventForm.addEventListener("submit", async (e) => {
   const value = parseFloat(document.getElementById("eventValue").value || "0");
   const color = document.getElementById("eventColor").value;
 
+  if (!name || !date) return;
+
   const finalColor = color || nameColorMap[name] || randomColorHex(name);
   await upsertNameColor(name, finalColor);
-  await refreshMonth(); // ensures all pills update
-
-  if (!name || !date) return;
 
   if (!id) {
     await createEvent({ name, description, date, value, color: finalColor });
@@ -364,7 +326,7 @@ eventForm.addEventListener("submit", async (e) => {
   selectedDate = date;
   await refreshMonth();
   renderSelectedDatePanel();
-  updateTodayBudget();
+  updateBudgetFor(selectedDate);
 });
 
 // --------- NAV ---------
@@ -385,6 +347,7 @@ document.getElementById("todayBtn").addEventListener("click", async () => {
   selectedDate = dateToISO(today);
   await refreshMonth();
   renderSelectedDatePanel();
+  updateBudgetFor(selectedDate);
 });
 
 // --------- REFRESH ---------
@@ -393,17 +356,9 @@ async function refreshMonth() {
   await loadNameColors();
   await loadEventsForMonth(currentYear, currentMonth);
   renderCalendar(currentYear, currentMonth);
-  updateTodayBudget();
-}
-
-// --------- BUDGET UPDATE ----------
-function updateBudgetFor(dateISO) {
-  const dayEvents = eventsCache.filter(e => e.date === dateISO);
-  const spent = dayEvents.reduce((sum, e) => sum + Number(e.value || 0), 0);
-  const remaining = BASE_BUDGET - spent;
-  document.getElementById("budgetValue").textContent = formatBRL(BASE_BUDGET);
-  document.getElementById("spentValue").textContent = formatBRL(spent);
-  document.getElementById("remainingValue").textContent = formatBRL(Math.max(remaining, 0));
+  // If a date is already selected, keep its budget visible
+  if (selectedDate) updateBudgetFor(selectedDate);
+  else updateBudgetFor(dateToISO(new Date()));
 }
 
 // --------- INIT ---------
@@ -412,4 +367,5 @@ function updateBudgetFor(dateISO) {
   selectedDate = dateToISO(today);
   await refreshMonth();
   renderSelectedDatePanel();
+  updateBudgetFor(selectedDate);
 })();
