@@ -2,78 +2,89 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Calendário com Eventos</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="style.css" />
-  <!-- Supabase UMD (alternative CDN to reduce blocking issues) -->
-  <script src="https://unpkg.com/@supabase/supabase-js@2.47.10/dist/umd/supabase.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Rastreador de Orçamento</title>
+  <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
-  <header class="topbar">
-    <h1 id="monthYear">Calendário</h1>
-    <div class="controls">
-      <button id="prevBtn">Anterior</button>
-      <button id="nextBtn">Próximo</button>
-      <button id="todayBtn">Hoje</button>
+  <header class="app-header">
+    <div class="month-nav">
+      <button id="prevMonthBtn" aria-label="Mês anterior">◀</button>
+      <h1 id="monthTitle"></h1>
+      <button id="nextMonthBtn" aria-label="Próximo mês">▶</button>
     </div>
-    <div class="budget">
-      <div class="budget-title">Orçamento da data</div>
-      <div id="budgetValue">R$ 2.000.000,00</div>
-      <div class="budget-sub">Gasto: <span id="spentValue">R$ 0,00</span></div>
-      <div class="budget-remaining">Restante: <span id="remainingValue">R$ 2.000.000,00</span></div>
+    <div class="top-right">
+      <div class="budget-panel">
+        <div class="budget-row">
+          <span class="label">Limite diário:</span>
+          <span id="dailyLimit"></span>
+        </div>
+        <div class="budget-row">
+          <span class="label">Total do dia:</span>
+          <span id="dailyTotal"></span>
+        </div>
+        <div class="budget-row">
+          <span class="label">Restante:</span>
+          <span id="dailyRemaining"></span>
+        </div>
+      </div>
+      <button id="newEventBtn" class="primary">Novo evento</button>
     </div>
   </header>
 
   <main>
-    <div id="calendar" class="calendar"></div>
+    <section class="calendar">
+      <div class="calendar-grid-header" id="weekdayHeader"></div>
+      <div class="calendar-grid" id="calendarGrid"></div>
+    </section>
 
-    <section class="event-panel">
-      <div class="event-header">
-        <h2 id="selectedDateLabel">Selecione uma data</h2>
-        <button id="newEventBtn">+ Novo evento</button>
-      </div>
-      <div id="eventList" class="event-list"></div>
+    <section class="event-list" id="eventListSection">
+      <h2 id="eventListTitle">Eventos do dia</h2>
+      <div id="eventList"></div>
     </section>
   </main>
 
-  <!-- Modal de novo/edição de evento -->
-  <div id="eventModal" class="modal hidden">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 id="modalTitle">Novo evento</h3>
-        <button class="close-btn" id="closeModalBtn">✕</button>
+  <!-- Modal: New/Edit Event -->
+  <dialog id="eventModal">
+    <form id="eventForm" method="dialog">
+      <h3 id="modalTitle">Novo evento</h3>
+      <div class="form-row">
+        <label for="eventName">Nome</label>
+        <input type="text" id="eventName" name="name" required />
       </div>
-      <form id="eventForm">
-        <div class="form-row">
-          <label for="eventName">Nome</label>
-          <input type="text" id="eventName" name="name" required />
-        </div>
-        <div class="form-row">
-          <label for="eventDescription">Descrição</label>
-          <textarea id="eventDescription" name="description"></textarea>
-        </div>
-        <div class="form-row">
-          <label for="eventDate">Data</label>
-          <input type="date" id="eventDate" name="date" required />
-        </div>
-        <div class="form-row">
-          <label for="eventValue">Valor (R$)</label>
-          <input type="number" id="eventValue" name="value" step="0.01" min="0" />
-        </div>
-        <div class="form-row color-row">
-          <label for="eventColor">Cor</label>
-          <input type="color" id="eventColor" name="color" />
-          <button type="button" id="autoColorBtn">Automática pelo nome</button>
-        </div>
-        <div class="form-actions">
-          <button type="submit" id="saveEventBtn">Salvar</button>
-          <button type="button" id="deleteEventBtn" class="danger hidden">Excluir</button>
-        </div>
-        <input type="hidden" id="eventId" />
-      </form>
-    </div>
-  </div>
+      <div class="form-row">
+        <label for="eventValue">Valor</label>
+        <input type="text" id="eventValue" name="value" inputmode="decimal" placeholder="0,00" required />
+      </div>
+      <div class="form-row">
+        <label for="eventColor">Cor (opcional)</label>
+        <input type="color" id="eventColor" name="color" />
+      </div>
+      <div class="form-row">
+        <label for="eventDescription">Descrição (opcional)</label>
+        <textarea id="eventDescription" name="description" rows="3"></textarea>
+      </div>
+      <div class="form-actions">
+        <button type="submit" id="saveEventBtn" class="primary">Salvar</button>
+        <button type="button" id="cancelEventBtn">Cancelar</button>
+      </div>
+      <input type="hidden" id="eventId" />
+    </form>
+  </dialog>
 
-  <script src="script.js" defer></script>
+  <!-- Modal: Confirm Delete -->
+  <dialog id="confirmDeleteModal">
+    <div class="confirm-content">
+      <p>Excluir este evento?</p>
+      <div class="form-actions">
+        <button id="confirmDeleteBtn" class="danger">Excluir</button>
+        <button id="cancelDeleteBtn">Cancelar</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
