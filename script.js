@@ -1,358 +1,403 @@
-// --------- CONFIG ---------
-const SUPABASE_URL = "https://whrugfiojjbxkzjvtgjs.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_3qJoVWoF-Kfn1n2dAi0RgA_gqT-j5uN";
-const BASE_BUDGET = 2000000.00; // R$ 2.000.000,00
+// script.js
+(function () {
+  const DAILY_LIMIT = 2000000.00; // Brazilian style display handled separately
+  const START_MONTH = new Date(2025, 11, 1); // Dec 2025 (month is 0-based)
+  const END_MONTH = new Date(2026, 11, 1);   // Dec 2026
 
-// Supabase client (global from UMD script)
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const client = window.supabaseClient;
 
-// --------- STATE ---------
-let currentYear = new Date().getFullYear();
-let currentMonth = new Date().getMonth();
-let selectedDate = dateToISO(new Date()); // default to today
-let eventsCache = [];
+  const els = {
+    monthTitle: document.getElementById('monthTitle'),
+    prevMonthBtn: document.getElementById('prevMonthBtn'),
+    nextMonthBtn: document.getElementById('nextMonthBtn'),
+    weekdayHeader: document.getElementById('weekdayHeader'),
+    calendarGrid: document.getElementById('calendarGrid'),
+    newEventBtn: document.getElementById('newEventBtn'),
+    eventModal: document.getElementById('eventModal'),
+    eventForm: document.getElementById('eventForm'),
+    eventId: document.getElementById('eventId'),
+    eventName: document.getElementById('eventName'),
+    eventValue: document.getElementById('eventValue'),
+    eventColor: document.getElementById('eventColor'),
+    eventDescription: document.getElementById('eventDescription'),
+    cancelEventBtn: document.getElementById('cancelEventBtn'),
+    saveEventBtn: document.getElementById('saveEventBtn'),
+    modalTitle: document.getElementById('modalTitle'),
+    eventListTitle: document.getElementById('eventListTitle'),
+    eventList: document.getElementById('eventList'),
+    dailyLimit: document.getElementById('dailyLimit'),
+    dailyTotal: document.getElementById('dailyTotal'),
+    dailyRemaining: document.getElementById('dailyRemaining'),
+    confirmDeleteModal: document.getElementById('confirmDeleteModal'),
+    confirmDeleteBtn: document.getElementById('confirmDeleteBtn'),
+    cancelDeleteBtn: document.getElementById('cancelDeleteBtn'),
+  };
 
-// --------- UTIL ---------
-function pad(n) { return n.toString().padStart(2, "0"); }
-function dateToISO(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
-function parseISODateLocal(iso) {
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d); // local date, avoids UTC shift
-}
-function formatBRL(value) {
-  return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-}
-function nameToColor(name) {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const hue = Math.abs(hash) % 360;
-  return hslToHex(hue, 65, 55);
-}
-function hslToHex(h, s, l) {
-  s /= 100; l /= 100;
-  const k = n => (n + h / 30) % 12;
-  const a = s * Math.min(l, 1 - l);
-  const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
-  const rgb = [Math.round(255 * f(0)), Math.round(255 * f(8)), Math.round(255 * f(4))];
-  return "#" + rgb.map(x => x.toString(16).padStart(2, "0")).join("");
-}
-
-// --------- DATA ---------
-async function loadEventsForMonth(year, month) {
-  const firstDayISO = `${year}-${pad(month+1)}-01`;
-  const lastDayISO = dateToISO(new Date(year, month+1, 0));
-  const { data, error } = await supabaseClient
-    .from("events")
-    .select("*")
-    .gte("date", firstDayISO)
-    .lte("date", lastDayISO)
-    .order("date", { ascending: true });
-  if (error) {
-    console.warn("Supabase error:", error);
-    eventsCache = [];
-  } else {
-    eventsCache = data || [];
-  }
-}
-async function createEvent(evt) {
-  const { error } = await supabaseClient.from("events").insert(evt);
-  if (error) console.warn("createEvent error:", error);
-}
-async function updateEvent(id, updates) {
-  const { error } = await supabaseClient.from("events").update(updates).eq("id", id);
-  if (error) console.warn("updateEvent error:", error);
-}
-async function deleteEvent(id) {
-  const { error } = await supabaseClient.from("events").delete().eq("id", id);
-  if (error) console.warn("deleteEvent error:", error);
-}
-
-// --------- RENDER ---------
-function renderMonthHeader(year, month) {
-  const months = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-  const el = document.getElementById("monthYear");
-  if (el) el.textContent = `${months[month]} ${year}`;
-}
-
-function renderCalendar(year, month) {
-  const cal = document.getElementById("calendar");
-  if (!cal) return;
-  cal.innerHTML = "";
-
-  const daysOfWeek = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
-  daysOfWeek.forEach(d => {
-    const hd = document.createElement("div");
-    hd.className = "day-header";
-    hd.textContent = d;
-    cal.appendChild(hd);
-  });
-
-  const firstDayIndex = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month+1, 0).getDate();
-  for (let i = 0; i < firstDayIndex; i++) {
-    const empty = document.createElement("div");
-    empty.className = "day-cell";
-    empty.style.visibility = "hidden";
-    cal.appendChild(empty);
-  }
-
-  const todayISO = dateToISO(new Date());
-
-  for (let d = 1; d <= daysInMonth; d++) {
-    const cell = document.createElement("div");
-    cell.className = "day-cell";
-    const dateISO = `${year}-${pad(month+1)}-${pad(d)}`;
-
-    const num = document.createElement("div");
-    num.className = "day-number";
-    num.textContent = d;
-    cell.appendChild(num);
-
-    const evWrap = document.createElement("div");
-    evWrap.className = "day-events";
-
-    const dayEvents = eventsCache.filter(e => e.date === dateISO);
-    dayEvents.forEach(e => {
-      const pill = document.createElement("div");
-      pill.className = "event-pill";
-      pill.textContent = e.name;
-      evWrap.appendChild(pill);
-    });
-    cell.appendChild(evWrap);
-
-    // Select date and redraw highlights
-    cell.addEventListener("click", () => {
-      selectedDate = dateISO;
-      renderSelectedDatePanel();
-      updateBudgetFor(dateISO);
-      renderCalendar(currentYear, currentMonth);
-    });
-
-    // Highlights
-    if (dateISO === todayISO) cell.classList.add("today");
-    if (selectedDate && dateISO === selectedDate) cell.classList.add("selected");
-
-    cal.appendChild(cell);
-  }
-}
-
-function renderSelectedDatePanel() {
-  const label = document.getElementById("selectedDateLabel");
-  const list = document.getElementById("eventList");
-  if (!label || !list) return;
-
-  list.innerHTML = "";
-
-  if (!selectedDate) {
-    label.textContent = "Selecione uma data";
-    return;
-  }
-
-  const d = parseISODateLocal(selectedDate);
-  label.textContent = d.toLocaleDateString("pt-BR", {
-    weekday: "long", year: "numeric", month: "long", day: "numeric"
-  });
-
-  const dayEvents = eventsCache.filter(e => e.date === selectedDate);
-  if (dayEvents.length === 0) {
-    const empty = document.createElement("div");
-    empty.className = "event-item";
-    empty.textContent = "Sem eventos para esta data.";
-    list.appendChild(empty);
-    return;
-  }
-
-  dayEvents.forEach(e => {
-    const item = document.createElement("div");
-    item.className = "event-item";
-
-    const dot = document.createElement("div");
-    dot.className = "event-color-dot";
-    dot.style.background = e.color || "#b9c1cc";
-    item.appendChild(dot);
-
-    const info = document.createElement("div");
-    const title = document.createElement("div");
-    title.className = "event-name";
-    title.textContent = e.name;
-    const desc = document.createElement("div");
-    desc.className = "event-desc";
-    desc.textContent = e.description || "";
-    info.appendChild(title);
-    info.appendChild(desc);
-    item.appendChild(info);
-
-    const val = document.createElement("div");
-    val.textContent = formatBRL(Number(e.value || 0));
-    item.appendChild(val);
-
-    const actions = document.createElement("div");
-    actions.className = "event-actions";
-
-    const editBtn = document.createElement("button");
-    editBtn.textContent = "Editar";
-    editBtn.addEventListener("click", () => openEditModal(e));
-
-    const delBtn = document.createElement("button");
-    delBtn.textContent = "Excluir";
-    delBtn.className = "danger";
-    delBtn.addEventListener("click", async () => {
-      await deleteEvent(e.id);
-      await refreshMonth();
-      renderSelectedDatePanel();
-      updateBudgetFor(selectedDate);
-    });
-
-    actions.appendChild(editBtn);
-    actions.appendChild(delBtn);
-    item.appendChild(actions);
-
-    list.appendChild(item);
-  });
-}
-
-function updateBudgetFor(dateISO) {
-  const dayEvents = eventsCache.filter(e => e.date === dateISO);
-  const spent = dayEvents.reduce((sum, e) => sum + Number(e.value || 0), 0);
-  const remaining = BASE_BUDGET - spent;
-
-  document.getElementById("budgetValue").textContent = formatBRL(BASE_BUDGET);
-  document.getElementById("spentValue").textContent = formatBRL(spent);
-  document.getElementById("remainingValue").textContent = formatBRL(Math.max(remaining, 0));
-}
-
-// --------- MODAL ---------
-function setModalData(data) {
-  document.getElementById("eventId").value = data.id || "";
-  document.getElementById("eventName").value = data.name || "";
-  document.getElementById("eventDescription").value = data.description || "";
-  document.getElementById("eventDate").value = data.date || dateToISO(new Date());
-  document.getElementById("eventValue").value = data.value || "";
-  document.getElementById("eventColor").value = data.color || "#b9c1cc";
-}
-function showModal() {
-  document.getElementById("eventModal").classList.remove("hidden");
-}
-function hideModal() {
-  document.getElementById("eventModal").classList.add("hidden");
-}
-function openCreateModal(dateISO) {
-  setModalData({
-    id: "",
-    name: "",
-    description: "",
-    date: dateISO || dateToISO(new Date()),
-    value: "",
-    color: ""
-  });
-  document.getElementById("modalTitle").textContent = "Novo evento";
-  document.getElementById("deleteEventBtn").classList.add("hidden");
-  showModal();
-}
-function openEditModal(eventObj) {
-  setModalData({
-    id: eventObj.id,
-    name: eventObj.name || "",
-    description: eventObj.description || "",
-    date: eventObj.date,
-    value: eventObj.value || "",
-    color: eventObj.color || "#b9c1cc"
-  });
-  document.getElementById("modalTitle").textContent = "Editar evento";
-  document.getElementById("deleteEventBtn").classList.remove("hidden");
-  showModal();
-}
-
-// --------- EVENT LISTENERS ---------
-document.getElementById("newEventBtn").addEventListener("click", () => {
-  if (!selectedDate) selectedDate = dateToISO(new Date());
-  openCreateModal(selectedDate);
-});
-document.getElementById("closeModalBtn").addEventListener("click", hideModal);
-document.getElementById("deleteEventBtn").addEventListener("click", async () => {
-  const id = document.getElementById("eventId").value;
-  if (!id) return;
-  await deleteEvent(id);
-  hideModal();
-  await refreshMonth();
-  renderSelectedDatePanel();
-  updateBudgetFor(selectedDate);
-});
-document.getElementById("autoColorBtn").addEventListener("click", () => {
-  const name = document.getElementById("eventName").value.trim();
-  if (!name) return;
-  document.getElementById("eventColor").value = nameToColor(name);
-});
-document.getElementById("eventForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const id = document.getElementById("eventId").value;
-  const name = document.getElementById("eventName").value.trim();
-  const description = document.getElementById("eventDescription").value.trim();
-  const date = document.getElementById("eventDate").value;
-  const value = parseFloat(document.getElementById("eventValue").value || "0");
-  const color = document.getElementById("eventColor").value || nameToColor(name);
-
-  if (!name || !date) return;
-
-  if (!id) {
-    await createEvent({ name, description, date, value, color });
-  } else {
-    await updateEvent(id, { name, description, date, value, color });
-  }
-
-  hideModal();
-  selectedDate = date;
-  await refreshMonth();
-  renderSelectedDatePanel();
-  updateBudgetFor(selectedDate);
-});
-
-// --------- NAV ---------
-document.getElementById("prevBtn").addEventListener("click", async () => {
-  currentMonth--;
-  if (currentMonth < 0) { currentMonth = 11; currentYear--; }
-  await refreshMonth();
-});
-document.getElementById("nextBtn").addEventListener("click", async () => {
-  currentMonth++;
-  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
-  await refreshMonth();
-});
-document.getElementById("todayBtn").addEventListener("click", async () => {
+  // State
+  let currentMonth = new Date(START_MONTH);
   const today = new Date();
-  currentYear = today.getFullYear();
-  currentMonth = today.getMonth();
-  selectedDate = dateToISO(today);
-  await refreshMonth();
-  renderSelectedDatePanel();
-  updateBudgetFor(selectedDate);
-});
+  let selectedDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  let pendingDeleteId = null;
+  let eventsCache = new Map(); // key: ISO date string, value: array of events
 
-// --------- INIT ---------
-document.addEventListener("DOMContentLoaded", async () => {
-  renderMonthHeader(currentYear, currentMonth);
-  renderCalendar(currentYear, currentMonth);
-  renderSelectedDatePanel();
-  updateBudgetFor(selectedDate);
+  // Intl helpers (Brazil)
+  const fmtCurrency = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+  const fmtDate = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium' });
+  const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
-  await loadEventsForMonth(currentYear, currentMonth);
-  renderCalendar(currentYear, currentMonth);
-  renderSelectedDatePanel();
-  updateBudgetFor(selectedDate);
-
-// --------- REFRESH ---------
-async function refreshMonth() {
-  renderMonthHeader(currentYear, currentMonth);
-  renderCalendar(currentYear, currentMonth);
-  await loadEventsForMonth(currentYear, currentMonth);
-  renderCalendar(currentYear, currentMonth);
-  if (selectedDate) {
-    updateBudgetFor(selectedDate);
-  } else {
-    selectedDate = dateToISO(new Date());
-    updateBudgetFor(selectedDate);
-    renderCalendar(currentYear, currentMonth);
+  function isSameDay(a, b) {
+    return a.getFullYear() === b.getFullYear() &&
+           a.getMonth() === b.getMonth() &&
+           a.getDate() === b.getDate();
   }
-};
+
+  function monthKey(date) {
+    return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}`;
+  }
+
+  function toISODate(d) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  // Color hashing: consistent color per name
+  function colorFromName(name) {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+      hash = hash & hash;
+    }
+    const hue = Math.abs(hash) % 360;
+    return `hsl(${hue} 70% 50%)`; // vibrant
+  }
+
+  function parseBRL(input) {
+    // Accept "1.234.567,89" or "1234567,89" or "1234567.89"
+    const normalized = input.replace(/\./g, '').replace(',', '.');
+    const n = Number(normalized);
+    if (Number.isNaN(n)) return null;
+    return n;
+  }
+
+  function renderWeekHeader() {
+    els.weekdayHeader.innerHTML = '';
+    weekDays.forEach(d => {
+      const div = document.createElement('div');
+      div.textContent = d;
+      els.weekdayHeader.appendChild(div);
+    });
+  }
+
+  function inRangeMonth(date) {
+    const t = new Date(date.getFullYear(), date.getMonth(), 1).getTime();
+    return t >= START_MONTH.getTime() && t <= END_MONTH.getTime();
+  }
+
+  async function loadMonthEvents(date) {
+    const first = new Date(date.getFullYear(), date.getMonth(), 1);
+    const last = new Date(date.getFullYear(), date.getMonth()+1, 0);
+    const fromISO = toISODate(first);
+    const toISO = toISODate(last);
+
+    const { data, error } = await client
+      .from('events')
+      .select('*')
+      .gte('event_date', fromISO)
+      .lte('event_date', toISO)
+      .order('event_date', { ascending: true })
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error loading events', error);
+      return;
+    }
+    eventsCache.clear();
+    data.forEach(ev => {
+      const key = ev.event_date;
+      if (!eventsCache.has(key)) eventsCache.set(key, []);
+      eventsCache.get(key).push(ev);
+    });
+  }
+
+  function renderMonth(date) {
+    const month = date.getMonth();
+    const year = date.getFullYear();
+    const title = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(date);
+    els.monthTitle.textContent = title.charAt(0).toUpperCase() + title.slice(1);
+
+    els.calendarGrid.innerHTML = '';
+
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startWeekDay = (firstDay.getDay()); // 0=Sun
+
+    // Fill prev month blanks
+    for (let i = 0; i < startWeekDay; i++) {
+      const blank = document.createElement('div');
+      blank.className = 'day-cell';
+      els.calendarGrid.appendChild(blank);
+    }
+
+    // Days
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+      const cellDate = new Date(year, month, d);
+      const cell = document.createElement('div');
+      cell.className = 'day-cell';
+      const isToday = isSameDay(cellDate, today);
+      const isSelected = isSameDay(cellDate, selectedDate);
+      if (isToday) cell.classList.add('today');
+      if (isSelected) cell.classList.add('selected');
+
+      const dateLabel = document.createElement('div');
+      dateLabel.className = 'date';
+      dateLabel.textContent = d;
+
+      const eventsWrap = document.createElement('div');
+      eventsWrap.className = 'day-events';
+
+      const iso = toISODate(cellDate);
+      const events = eventsCache.get(iso) || [];
+      events.forEach(ev => {
+        const pill = document.createElement('div');
+        pill.className = 'event-pill';
+        const leftColor = ev.color ? ev.color : colorFromName(ev.name);
+        pill.style.borderLeftColor = leftColor;
+
+        const name = document.createElement('span');
+        name.className = 'name';
+        name.textContent = ev.name;
+
+        const value = document.createElement('span');
+        value.className = 'value';
+        value.textContent = fmtCurrency.format(Number(ev.value));
+
+        pill.appendChild(name);
+        pill.appendChild(value);
+
+        pill.addEventListener('click', () => {
+          // Toggle in the side list; also show description there.
+          showEventDetails(ev);
+        });
+
+        eventsWrap.appendChild(pill);
+      });
+
+      cell.appendChild(dateLabel);
+      cell.appendChild(eventsWrap);
+
+      cell.addEventListener('click', () => {
+        selectedDate = cellDate;
+        updateSelectedHighlight();
+        renderSideList();
+        updateBudgetPanel();
+      });
+
+      els.calendarGrid.appendChild(cell);
+    }
+
+    renderSideList();
+    updateBudgetPanel();
+  }
+
+  function updateSelectedHighlight() {
+    const cells = els.calendarGrid.querySelectorAll('.day-cell');
+    cells.forEach((cell, idx) => {
+      cell.classList.remove('selected');
+    });
+    // Re-apply selected by recomputing render; simpler approach:
+    renderMonth(currentMonth);
+  }
+
+  function renderSideList() {
+    const iso = toISODate(selectedDate);
+    const events = eventsCache.get(iso) || [];
+    els.eventListTitle.textContent = `Eventos de ${fmtDate.format(selectedDate)}`;
+    els.eventList.innerHTML = '';
+
+    events.forEach(ev => {
+      const item = document.createElement('div');
+      item.className = 'event-item';
+
+      const header = document.createElement('div');
+      header.className = 'header';
+      const left = document.createElement('div');
+      left.innerHTML = `<strong>${ev.name}</strong> <span class="meta">${fmtCurrency.format(Number(ev.value))}</span>`;
+      const right = document.createElement('div');
+      right.className = 'actions';
+
+      const editBtn = document.createElement('button');
+      editBtn.textContent = 'Editar';
+      editBtn.addEventListener('click', () => openEditModal(ev));
+
+      const delBtn = document.createElement('button');
+      delBtn.textContent = 'Excluir';
+      delBtn.className = 'danger';
+      delBtn.addEventListener('click', () => {
+        pendingDeleteId = ev.id;
+        els.confirmDeleteModal.showModal();
+      });
+
+      right.appendChild(editBtn);
+      right.appendChild(delBtn);
+
+      header.appendChild(left);
+      header.appendChild(right);
+
+      item.appendChild(header);
+
+      if (ev.description && ev.description.trim().length > 0) {
+        const desc = document.createElement('div');
+        desc.className = 'desc';
+        desc.textContent = ev.description;
+        // Hidden until clicked
+        desc.style.display = 'none';
+
+        // Clicking anywhere on item toggles description
+        item.addEventListener('click', (e) => {
+          // Avoid toggling when clicking buttons
+          if (e.target === editBtn || e.target === delBtn) return;
+          desc.style.display = (desc.style.display === 'none') ? 'block' : 'none';
+        });
+
+        item.appendChild(desc);
+      }
+
+      // Left color bar consistency
+      item.style.borderLeft = `6px solid ${ev.color ? ev.color : colorFromName(ev.name)}`;
+
+      els.eventList.appendChild(item);
+    });
+  }
+
+  function updateBudgetPanel() {
+    const iso = toISODate(selectedDate);
+    const events = eventsCache.get(iso) || [];
+    const total = events.reduce((sum, ev) => sum + Number(ev.value), 0);
+    const remaining = Math.max(0, DAILY_LIMIT - total);
+
+    els.dailyLimit.textContent = fmtCurrency.format(DAILY_LIMIT);
+    els.dailyTotal.textContent = fmtCurrency.format(total);
+    els.dailyRemaining.textContent = fmtCurrency.format(remaining);
+    els.dailyRemaining.style.color = remaining === 0 ? 'var(--danger)' : 'var(--text)';
+  }
+
+  function openNewModal() {
+    els.modalTitle.textContent = `Novo evento para ${fmtDate.format(selectedDate)}`;
+    els.eventId.value = '';
+    els.eventName.value = '';
+    els.eventValue.value = '';
+    els.eventColor.value = '#3b82f6';
+    els.eventDescription.value = '';
+    els.eventModal.showModal();
+  }
+
+  function openEditModal(ev) {
+    els.modalTitle.textContent = `Editar evento (${fmtDate.format(new Date(ev.event_date))})`;
+    els.eventId.value = ev.id;
+    els.eventName.value = ev.name;
+    els.eventValue.value = Number(ev.value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    els.eventColor.value = ev.color ? ev.color : '#3b82f6';
+    els.eventDescription.value = ev.description || '';
+    els.eventModal.showModal();
+  }
+
+  function showEventDetails(ev) {
+    // Focus side list item logic handled; optional scrolling could be added.
+    renderSideList();
+  }
+
+  async function saveEvent() {
+    const id = els.eventId.value;
+    const name = els.eventName.value.trim();
+    const valueRaw = els.eventValue.value.trim();
+    const value = parseBRL(valueRaw);
+    const color = els.eventColor.value || null;
+    const description = els.eventDescription.value.trim();
+
+    if (!name) { alert('Nome é obrigatório'); return; }
+    if (value === null) { alert('Valor inválido'); return; }
+    if (value < 0) { alert('Valor deve ser positivo'); return; }
+
+    const payload = {
+      name,
+      value,
+      description: description.length ? description : null,
+      color: color,
+    };
+
+    if (!id) {
+      // Insert for selected date
+      payload.event_date = toISODate(selectedDate);
+      const { data, error } = await client.from('events').insert(payload).select('*').single();
+      if (error) { alert('Erro ao salvar evento'); console.error(error); return; }
+    } else {
+      // Update existing
+      const { data, error } = await client.from('events').update(payload).eq('id', id).select('*').single();
+      if (error) { alert('Erro ao atualizar evento'); console.error(error); return; }
+    }
+
+    els.eventModal.close();
+    await loadMonthEvents(currentMonth);
+    renderMonth(currentMonth);
+  }
+
+  async function deleteEvent() {
+    if (!pendingDeleteId) { els.confirmDeleteModal.close(); return; }
+    const { error } = await client.from('events').delete().eq('id', pendingDeleteId);
+    if (error) { alert('Erro ao excluir evento'); console.error(error); }
+    pendingDeleteId = null;
+    els.confirmDeleteModal.close();
+    await loadMonthEvents(currentMonth);
+    renderMonth(currentMonth);
+  }
+
+  function clampMonthNav() {
+    const prevCandidate = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
+    const nextCandidate = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
+
+    els.prevMonthBtn.disabled = !inRangeMonth(prevCandidate);
+    els.nextMonthBtn.disabled = !inRangeMonth(nextCandidate);
+  }
+
+  async function gotoMonth(date) {
+    currentMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+    // If selected date falls outside currentMonth, keep selected date as is; events panel still shows selected date values.
+    clampMonthNav();
+    await loadMonthEvents(currentMonth);
+    renderMonth(currentMonth);
+  }
+
+  // Events
+  els.prevMonthBtn.addEventListener('click', () => {
+    const prev = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
+    if (inRangeMonth(prev)) gotoMonth(prev);
+  });
+  els.nextMonthBtn.addEventListener('click', () => {
+    const next = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
+    if (inRangeMonth(next)) gotoMonth(next);
+  });
+
+  els.newEventBtn.addEventListener('click', () => {
+    openNewModal();
+  });
+
+  els.cancelEventBtn.addEventListener('click', () => {
+    els.eventModal.close();
+  });
+
+  els.eventForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    saveEvent();
+  });
+
+  els.confirmDeleteBtn.addEventListener('click', deleteEvent);
+  els.cancelDeleteBtn.addEventListener('click', () => els.confirmDeleteModal.close());
+
+  // Initial render
+  renderWeekHeader();
+  (async function init() {
+    // Start at December 2025, select today (even if not in Dec 2025)
+    await gotoMonth(START_MONTH);
+    // Ensure selected date is visible and highlighted in the month currently displayed
+    renderMonth(currentMonth);
+  })();
+})();
