@@ -38,7 +38,7 @@
     authEmail: document.getElementById('authEmail'),
     authPassword: document.getElementById('authPassword'),
     loginBtn: document.getElementById('loginBtn'),
-    signupBtn: document.getElementById('signupBtn'),
+    // signupBtn: document.getElementById('signupBtn'),
     logoutBtn: document.getElementById('logoutBtn'),
   };
 
@@ -365,7 +365,7 @@
       els.authStatus.textContent = `Autenticado como: ${session.user.email}`;
       els.logoutBtn.style.display = 'inline-block';
       els.loginBtn.style.display = 'none';
-      els.signupBtn.style.display = 'none';
+      // els.signupBtn.style.display = 'none';
       els.authEmail.style.display = 'none';
       els.authPassword.style.display = 'none';
       els.newEventBtn.disabled = false;
@@ -373,7 +373,7 @@
       els.authStatus.textContent = 'Você não está autenticado.';
       els.logoutBtn.style.display = 'none';
       els.loginBtn.style.display = 'inline-block';
-      els.signupBtn.style.display = 'inline-block';
+      // els.signupBtn.style.display = 'inline-block';
       els.authEmail.style.display = 'block';
       els.authPassword.style.display = 'block';
       els.newEventBtn.disabled = true;
@@ -390,7 +390,7 @@
     await gotoMonth(currentMonth);
   });
 
-  els.signupBtn.addEventListener('click', async () => {
+  // els.signupBtn.addEventListener('click', async () => {
     const email = els.authEmail.value.trim();
     const password = els.authPassword.value;
     if (!email || !password) { alert('Informe email e senha'); return; }
