@@ -69,28 +69,11 @@ async function loadEventsForMonth(year, month) {
     eventsCache = data || [];
   }
 }
-async function createEvent(evt) {
-  const { data, error } = await supabaseClient.from("events").insert(evt).select().single();
-  if (error) console.warn("createEvent error:", error);
-  if (evt.name && evt.color) await upsertNameColor(evt.name, evt.color);
-  return data;
-}
-async function updateEvent(id, updates) {
-  const { data, error } = await supabaseClient.from("events").update(updates).eq("id", id).select().single();
-  if (error) console.warn("updateEvent error:", error);
-  if (updates.name && updates.color) await upsertNameColor(updates.name, updates.color);
-  return data;
-}
-async function deleteEvent(id) {
-  const { error } = await supabaseClient.from("events").delete().eq("id", id);
-  if (error) console.warn("deleteEvent error:", error);
-}
 
 // --------- RENDER ---------
 function renderMonthHeader(year, month) {
   const monthNames = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-  const el = document.getElementById("monthYear");
-  if (el) el.textContent = `${monthNames[month]} ${year}`;
+  document.getElementById("monthYear").textContent = `${monthNames[month]} ${year}`;
 }
 
 function renderCalendar(year, month) {
@@ -146,12 +129,11 @@ function renderCalendar(year, month) {
       selectedDate = dateISO;
       renderSelectedDatePanel();
       updateBudgetFor(dateISO);
-      renderCalendar(currentYear, currentMonth); // redraw highlight with current eventsCache
+      renderCalendar(currentYear, currentMonth);
     });
 
     // Highlights
-    const todayISO = dateToISO(new Date());
-    if (dateISO === todayISO) cell.classList.add("today");
+    if (dateISO === dateToISO(new Date())) cell.classList.add("today");
     if (selectedDate && dateISO === selectedDate) cell.classList.add("selected");
 
     cal.appendChild(cell);
@@ -366,22 +348,22 @@ document.getElementById("todayBtn").addEventListener("click", async () => {
 
 // --------- REFRESH ---------
 async function refreshMonth() {
-  // Immediate render (no await) for first paint
+  // Always render header and grid immediately
   renderMonthHeader(currentYear, currentMonth);
   renderCalendar(currentYear, currentMonth);
 
-  // Async data load; re-render with events when done
+  // Kick off async loads; re-render when done
   await loadNameColors();
   await loadEventsForMonth(currentYear, currentMonth);
 
   renderCalendar(currentYear, currentMonth);
 
-  // Budget for selected date or default to today
+  // Keep budget visible for selected date or default to today
   if (selectedDate) updateBudgetFor(selectedDate);
   else {
     selectedDate = dateToISO(new Date()); // default selection to today
     updateBudgetFor(selectedDate);
-    renderCalendar(currentYear, currentMonth); // ensure selected highlight
+    renderCalendar(currentYear, currentMonth); // ensures selected highlight shows
   }
 }
 
@@ -390,7 +372,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const today = new Date();
   selectedDate = dateToISO(today);
 
-  // First paint immediately
+  // First paint immediately (no awaits)
   renderMonthHeader(currentYear, currentMonth);
   renderCalendar(currentYear, currentMonth);
   renderSelectedDatePanel();
@@ -402,3 +384,4 @@ document.addEventListener("DOMContentLoaded", async () => {
   renderCalendar(currentYear, currentMonth);
   renderSelectedDatePanel();
   updateBudgetFor(selectedDate);
+});
