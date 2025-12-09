@@ -1,6 +1,7 @@
 // --------- CONFIG ---------
 const SUPABASE_URL = "https://whrugfiojjbxkzjvtgjs.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_3qJoVWoF-Kfn1n2dAi0RgA_gqT-j5uN";
+const BASE_BUDGET = 2000000.00; // R$ 2.000.000,00
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // --------- STATE ---------
