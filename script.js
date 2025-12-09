@@ -355,5 +355,4 @@ async function refreshMonth() {
     updateBudgetFor(selectedDate);
     renderCalendar(currentYear, currentMonth);
   }
-}
-  ();
+};
