@@ -350,6 +350,7 @@ eventForm.addEventListener("submit", async (e) => {
 
   const finalColor = color || nameColorMap[name] || randomColorHex(name);
   await upsertNameColor(name, finalColor);
+  await refreshMonth(); // ensures all pills update
 
   if (!name || !date) return;
 
