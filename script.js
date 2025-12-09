@@ -330,6 +330,18 @@ document.getElementById("todayBtn").addEventListener("click", async () => {
   updateBudgetFor(selectedDate);
 });
 
+// --------- INIT ---------
+document.addEventListener("DOMContentLoaded", async () => {
+  renderMonthHeader(currentYear, currentMonth);
+  renderCalendar(currentYear, currentMonth);
+  renderSelectedDatePanel();
+  updateBudgetFor(selectedDate);
+
+  await loadEventsForMonth(currentYear, currentMonth);
+  renderCalendar(currentYear, currentMonth);
+  renderSelectedDatePanel();
+  updateBudgetFor(selectedDate);
+
 // --------- REFRESH ---------
 async function refreshMonth() {
   renderMonthHeader(currentYear, currentMonth);
@@ -344,15 +356,3 @@ async function refreshMonth() {
     renderCalendar(currentYear, currentMonth);
   }
 }
-
-// --------- INIT ---------
-document.addEventListener("DOMContentLoaded", async () => {
-  renderMonthHeader(currentYear, currentMonth);
-  renderCalendar(currentYear, currentMonth);
-  renderSelectedDatePanel();
-  updateBudgetFor(selectedDate);
-
-  await loadEventsForMonth(currentYear, currentMonth);
-  renderCalendar(currentYear, currentMonth);
-  renderSelectedDatePanel();
-  updateBudgetFor(selectedDate);
