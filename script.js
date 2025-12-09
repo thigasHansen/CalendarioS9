@@ -43,37 +43,31 @@ function randomColorHex(nameSeed = "") {
 
 // --------- SUPABASE DATA ---------
 async function loadNameColors() {
-  const { data } = await supabaseClient.from("name_colors").select("*");
+  const { data, error } = await supabaseClient.from("name_colors").select("*");
+  if (error) console.warn("name_colors error:", error);
   nameColorMap = {};
   (data || []).forEach(row => { nameColorMap[row.name] = row.color; });
 }
 async function upsertNameColor(name, color) {
   nameColorMap[name] = color;
-  await supabaseClient.from("name_colors").upsert({ name, color });
+  const { error } = await supabaseClient.from("name_colors").upsert({ name, color });
+  if (error) console.warn("upsertNameColor error:", error);
 }
 async function loadEventsForMonth(year, month) {
   const firstDayISO = `${year}-${pad(month + 1)}-01`;
   const lastDayISO = dateToISO(new Date(year, month + 1, 0));
-  const { data } = await supabaseClient
+  const { data, error } = await supabaseClient
     .from("events")
     .select("*")
     .gte("date", firstDayISO)
     .lte("date", lastDayISO)
     .order("date", { ascending: true });
-  eventsCache = data || [];
-}
-async function createEvent(evt) {
-  const { data } = await supabaseClient.from("events").insert(evt).select().single();
-  if (evt.name && evt.color) await upsertNameColor(evt.name, evt.color);
-  return data;
-}
-async function updateEvent(id, updates) {
-  const { data } = await supabaseClient.from("events").update(updates).eq("id", id).select().single();
-  if (updates.name && updates.color) await upsertNameColor(updates.name, updates.color);
-  return data;
-}
-async function deleteEvent(id) {
-  await supabaseClient.from("events").delete().eq("id", id);
+  if (error) {
+    console.warn("events error:", error);
+    eventsCache = [];
+  } else {
+    eventsCache = data || [];
+  }
 }
 
 // --------- RENDER ---------
@@ -84,6 +78,7 @@ function renderMonthHeader(year, month) {
 
 function renderCalendar(year, month) {
   const cal = document.getElementById("calendar");
+  if (!cal) return;
   cal.innerHTML = "";
 
   const daysOfWeek = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
@@ -129,18 +124,17 @@ function renderCalendar(year, month) {
 
     cell.appendChild(evWrap);
 
-    // Select date on click, no auto-modal
+    // Select date on click; redraw highlights only
     cell.addEventListener("click", () => {
       selectedDate = dateISO;
       renderSelectedDatePanel();
       updateBudgetFor(dateISO);
-      // Re-render grid to reflect selected highlight, without refetching
       renderCalendar(currentYear, currentMonth);
     });
 
-    // Highlight today and selected
+    // Highlights
     if (dateISO === dateToISO(new Date())) cell.classList.add("today");
-    if (dateISO === selectedDate) cell.classList.add("selected");
+    if (selectedDate && dateISO === selectedDate) cell.classList.add("selected");
 
     cal.appendChild(cell);
   }
@@ -149,6 +143,8 @@ function renderCalendar(year, month) {
 function renderSelectedDatePanel() {
   const label = document.getElementById("selectedDateLabel");
   const list = document.getElementById("eventList");
+  if (!label || !list) return;
+
   list.innerHTML = "";
 
   if (!selectedDate) {
@@ -352,20 +348,40 @@ document.getElementById("todayBtn").addEventListener("click", async () => {
 
 // --------- REFRESH ---------
 async function refreshMonth() {
+  // Always render header and grid immediately
   renderMonthHeader(currentYear, currentMonth);
+  renderCalendar(currentYear, currentMonth);
+
+  // Kick off async loads; re-render when done
   await loadNameColors();
   await loadEventsForMonth(currentYear, currentMonth);
+
   renderCalendar(currentYear, currentMonth);
-  // If a date is already selected, keep its budget visible
+
+  // Keep budget visible for selected date or default to today
   if (selectedDate) updateBudgetFor(selectedDate);
-  else updateBudgetFor(dateToISO(new Date()));
+  else {
+    selectedDate = dateToISO(new Date()); // default selection to today
+    updateBudgetFor(selectedDate);
+    renderCalendar(currentYear, currentMonth); // ensures selected highlight shows
+  }
 }
 
 // --------- INIT ---------
-(async function init() {
+document.addEventListener("DOMContentLoaded", async () => {
   const today = new Date();
   selectedDate = dateToISO(today);
-  await refreshMonth();
+
+  // First paint immediately (no awaits)
+  renderMonthHeader(currentYear, currentMonth);
+  renderCalendar(currentYear, currentMonth);
   renderSelectedDatePanel();
   updateBudgetFor(selectedDate);
-})();
+
+  // Then fetch data and re-render with events
+  await loadNameColors();
+  await loadEventsForMonth(currentYear, currentMonth);
+  renderCalendar(currentYear, currentMonth);
+  renderSelectedDatePanel();
+  updateBudgetFor(selectedDate);
+});
