@@ -129,12 +129,13 @@ function renderCalendar(year, month) {
 
     cell.appendChild(evWrap);
 
-    // Select date on click, no auto-modal; redraw only highlights
+    // Select date on click, no auto-modal
     cell.addEventListener("click", () => {
       selectedDate = dateISO;
       renderSelectedDatePanel();
       updateBudgetFor(dateISO);
-      renderCalendar(currentYear, currentMonth); // redraw highlights without refetching
+      // Re-render grid to reflect selected highlight, without refetching
+      renderCalendar(currentYear, currentMonth);
     });
 
     // Highlight today and selected
@@ -355,7 +356,7 @@ async function refreshMonth() {
   await loadNameColors();
   await loadEventsForMonth(currentYear, currentMonth);
   renderCalendar(currentYear, currentMonth);
-  // Keep budget visible for selected date or default to today
+  // If a date is already selected, keep its budget visible
   if (selectedDate) updateBudgetFor(selectedDate);
   else updateBudgetFor(dateToISO(new Date()));
 }
@@ -364,7 +365,7 @@ async function refreshMonth() {
 (async function init() {
   const today = new Date();
   selectedDate = dateToISO(today);
-  await refreshMonth();              // fetch + render header + grid
-  renderSelectedDatePanel();         // show right panel
-  updateBudgetFor(selectedDate);     // budget for selected date
+  await refreshMonth();
+  renderSelectedDatePanel();
+  updateBudgetFor(selectedDate);
 })();
