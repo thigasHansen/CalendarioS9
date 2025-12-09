@@ -25,10 +25,8 @@
   </header>
 
   <main>
-    <!-- Calendar grid -->
     <div id="calendar" class="calendar"></div>
 
-    <!-- Side panel with events -->
     <section class="event-panel">
       <div class="event-header">
         <h2 id="selectedDateLabel">Selecione uma data</h2>
@@ -76,7 +74,7 @@
     </div>
   </div>
 
-  <!-- JS logic -->
-  <script src="script.js"></script>
+  <!-- JS logic (defer ensures DOM is ready) -->
+  <script src="script.js" defer></script>
 </body>
 </html>
