@@ -394,34 +394,7 @@
     }
   });
 
-    const { data, error } = await client.auth.signUp({ email, password });
-    if (error) {
-      alert('Erro ao cadastrar');
-      console.error(error);
-      return;
-    }
-
-    const newUserId = data.user?.id;
-    if (!newUserId) {
-      alert('Cadastro criado. Verifique seu email para confirmar.');
-      return;
-    }
-
-    const { error: insertError } = await client
-      .from('usernames')
-      .insert({ user_id: newUserId, username, email });
-
-    if (insertError) {
-      alert('Erro ao salvar nome de usuário');
-      console.error(insertError);
-      return;
-    }
-
-    alert('Cadastro feito! Verifique seu email para confirmar.');
-    els.registerModal.close();
-  });
-
-  els.logoutBtn.addEventListener('click', async () => {
+    els.logoutBtn.addEventListener('click', async () => {
     await client.auth.signOut();
     await refreshAuthUI();
     await gotoMonth(currentMonth);
