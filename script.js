@@ -32,17 +32,7 @@
     confirmDeleteBtn: document.getElementById('confirmDeleteBtn'),
     cancelDeleteBtn: document.getElementById('cancelDeleteBtn'),
 
-    // Auth
-    authPanel: document.getElementById('authPanel'),
-    authStatus: document.getElementById('authStatus'),
-    authEmail: document.getElementById('authEmail'),
-    authPassword: document.getElementById('authPassword'),
-    loginBtn: document.getElementById('loginBtn'),
-    // signupBtn: document.getElementById('signupBtn'),
-    logoutBtn: document.getElementById('logoutBtn'),
-  };
-
-  // State
+    // State
   let currentMonth = new Date(START_MONTH);
   const today = new Date();
   let selectedDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -385,7 +375,6 @@
   // Initial render
   renderWeekHeader();
   (async function init() {
-    await refreshAuthUI();
     await gotoMonth(START_MONTH);
     renderMonth(currentMonth);
   })();
