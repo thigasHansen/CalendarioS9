@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Rastreador de Orçamento</title>
-  <link rel="stylesheet" href="styles.css"/>
+  <link rel="stylesheet" href="./styles.css"/>
+  <link rel="icon" href="./favicon.ico">
 </head>
 <body>
   <header class="app-header">
@@ -15,20 +16,14 @@
     </div>
     <div class="top-right">
       <div class="budget-panel">
-        <div class="budget-row">
-          <span class="label">Limite diário:</span>
-          <span id="dailyLimit"></span>
-        </div>
-        <div class="budget-row">
-          <span class="label">Total do dia:</span>
-          <span id="dailyTotal"></span>
-        </div>
-        <div class="budget-row">
-          <span class="label">Restante:</span>
-          <span id="dailyRemaining"></span>
-        </div>
+        <div class="budget-row"><span class="label">Limite diário:</span><span id="dailyLimit"></span></div>
+        <div class="budget-row"><span class="label">Total do dia:</span><span id="dailyTotal"></span></div>
+        <div class="budget-row"><span class="label">Restante:</span><span id="dailyRemaining"></span></div>
       </div>
       <button id="newEventBtn" class="primary">Novo evento</button>
+      <button id="openLoginBtn" class="primary">Login</button>
+      <button id="openRegisterBtn">Cadastrar</button>
+      <button id="logoutBtn" class="danger" style="display:none;">Sair</button>
     </div>
   </header>
 
@@ -83,8 +78,50 @@
     </div>
   </dialog>
 
+  <!-- Login Modal -->
+  <dialog id="loginModal">
+    <form id="loginForm" method="dialog">
+      <h3>Entrar</h3>
+      <div class="form-row">
+        <label for="loginUsername">Usuário</label>
+        <input type="text" id="loginUsername" required />
+      </div>
+      <div class="form-row">
+        <label for="loginPassword">Senha</label>
+        <input type="password" id="loginPassword" required />
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="primary">Entrar</button>
+        <button type="button" id="cancelLoginBtn">Cancelar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Registration Modal -->
+  <dialog id="registerModal">
+    <form id="registerForm" method="dialog">
+      <h3>Cadastrar</h3>
+      <div class="form-row">
+        <label for="regUsername">Usuário</label>
+        <input type="text" id="regUsername" required />
+      </div>
+      <div class="form-row">
+        <label for="regEmail">Email</label>
+        <input type="email" id="regEmail" required />
+      </div>
+      <div class="form-row">
+        <label for="regPassword">Senha</label>
+        <input type="password" id="regPassword" required />
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="primary">Cadastrar</button>
+        <button type="button" id="cancelRegisterBtn">Cancelar</button>
+      </div>
+    </form>
+  </dialog>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase.js"></script>
-  <script src="script.js"></script>
+  <script src="./supabase.js"></script>
+  <script src="./script.js"></script>
 </body>
 </html>
