@@ -33,14 +33,10 @@
     cancelDeleteBtn: document.getElementById('cancelDeleteBtn'),
     // Auth
     openLoginBtn: document.getElementById('openLoginBtn'),
-    openRegisterBtn: document.getElementById('openRegisterBtn'),
     logoutBtn: document.getElementById('logoutBtn'),
     loginModal: document.getElementById('loginModal'),
-    registerModal: document.getElementById('registerModal'),
     loginForm: document.getElementById('loginForm'),
-    registerForm: document.getElementById('registerForm'),
     cancelLoginBtn: document.getElementById('cancelLoginBtn'),
-    cancelRegisterBtn: document.getElementById('cancelRegisterBtn'),
   };
 
   // State
