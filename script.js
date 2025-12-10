@@ -363,11 +363,9 @@
     // Edit/delete buttons are handled per-item on render
   }
 
-  // Login / Register modals
+  // Login modal
   els.openLoginBtn.addEventListener('click', () => els.loginModal.showModal());
   els.cancelLoginBtn.addEventListener('click', () => els.loginModal.close());
-  els.openRegisterBtn.addEventListener('click', () => els.registerModal.showModal());
-  els.cancelRegisterBtn.addEventListener('click', () => els.registerModal.close());
 
   els.loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -400,18 +398,7 @@
     }
   });
 
-  els.registerForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const username = document.getElementById('regUsername').value.trim();
-    const email = document.getElementById('regEmail').value.trim();
-    const password = document.getElementById('regPassword').value;
-
-    if (!username || !email || !password) {
-      alert('Informe usuário, email e senha');
-      return;
-    }
-
-    // Enforce lower-case uniqueness
+     // Enforce lower-case uniqueness
     const { data: existing, error: existErr } = await client
       .from('usernames')
       .select('id')
