@@ -37,6 +37,7 @@ body {
 .month-nav h1 {
   margin: 0;
   font-size: 20px;
+  text-transform: capitalize;
 }
 
 .top-right {
@@ -64,8 +65,10 @@ body {
   border-radius: 6px;
   cursor: pointer;
 }
-
 .primary:hover { filter: brightness(1.1); }
+
+button[disabled] { opacity: 0.5; cursor: not-allowed; }
+
 .danger {
   background: var(--danger);
   color: white;
@@ -106,15 +109,12 @@ main {
   font-size: 12px;
 }
 
-.calendar-grid {
-  gap: 0;
-}
-
 .day-cell {
   min-height: 110px;
   border: 1px solid var(--grid);
   padding: 6px;
   position: relative;
+  cursor: pointer;
 }
 
 .day-cell .date {
@@ -172,6 +172,7 @@ main {
   border-radius: 8px;
   padding: 8px;
   margin-bottom: 8px;
+  border-left: 6px solid var(--accent);
 }
 
 .event-item .header {
@@ -202,11 +203,17 @@ dialog {
   overflow: hidden;
 }
 
-#eventForm {
+#eventForm, #loginForm, #registerForm {
   padding: 16px;
   background: var(--panel);
   color: var(--text);
   min-width: 320px;
+}
+
+#loginModal h3, #registerModal h3, #eventModal h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  text-align: center;
 }
 
 .form-row { margin-bottom: 10px; }
