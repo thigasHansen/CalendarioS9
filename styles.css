@@ -37,7 +37,6 @@ body {
 .month-nav h1 {
   margin: 0;
   font-size: 20px;
-  text-transform: capitalize;
 }
 
 .top-right {
@@ -65,8 +64,8 @@ body {
   border-radius: 6px;
   cursor: pointer;
 }
-.primary:hover { filter: brightness(1.1); }
 
+.primary:hover { filter: brightness(1.1); }
 .danger {
   background: var(--danger);
   color: white;
@@ -116,7 +115,6 @@ main {
   border: 1px solid var(--grid);
   padding: 6px;
   position: relative;
-  cursor: pointer;
 }
 
 .day-cell .date {
@@ -174,7 +172,6 @@ main {
   border-radius: 8px;
   padding: 8px;
   margin-bottom: 8px;
-  border-left: 6px solid var(--accent);
 }
 
 .event-item .header {
@@ -230,36 +227,4 @@ dialog {
   background: var(--panel);
   color: var(--text);
   min-width: 280px;
-}
-
-.auth-panel {
-  position: fixed;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  background: var(--panel);
-  border: 1px solid var(--grid);
-  border-radius: 10px;
-  padding: 16px;
-  max-width: 320px;
-  text-align: center;
-}
-
-.auth-status {
-  color: var(--muted);
-  margin-bottom: 12px;
-}
-
-.auth-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.auth-controls input {
-  padding: 8px;
-  border-radius: 6px;
-  border: 1px solid var(--grid);
-  background: #1b1f27;
-  color: var(--text);
 }
