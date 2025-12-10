@@ -394,18 +394,6 @@
     }
   });
 
-     // Enforce lower-case uniqueness
-    const { data: existing, error: existErr } = await client
-      .from('usernames')
-      .select('id')
-      .eq('username', username)
-      .maybeSingle();
-    if (existErr) { console.error(existErr); }
-    if (existing) {
-      alert('Usuário já existe. Escolha outro.');
-      return;
-    }
-
     const { data, error } = await client.auth.signUp({ email, password });
     if (error) {
       alert('Erro ao cadastrar');
