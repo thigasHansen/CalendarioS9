@@ -356,63 +356,7 @@
     renderMonth(currentMonth);
   }
 
-  // Auth UI logic
-  async function refreshAuthUI() {
-    const { data: { session } } = await client.auth.getSession();
-    userId = session?.user?.id || null;
-
-    if (userId) {
-      els.authStatus.textContent = `Autenticado como: ${session.user.email}`;
-      els.logoutBtn.style.display = 'inline-block';
-      els.loginBtn.style.display = 'none';
-      // els.signupBtn.style.display = 'none';
-      els.authEmail.style.display = 'none';
-      els.authPassword.style.display = 'none';
-      els.newEventBtn.disabled = false;
-    } else {
-      els.authStatus.textContent = 'Você não está autenticado.';
-      els.logoutBtn.style.display = 'none';
-      els.loginBtn.style.display = 'inline-block';
-      // els.signupBtn.style.display = 'inline-block';
-      els.authEmail.style.display = 'block';
-      els.authPassword.style.display = 'block';
-      els.newEventBtn.disabled = true;
-    }
-  }
-
-  els.loginBtn.addEventListener('click', async () => {
-    const email = els.authEmail.value.trim();
-    const password = els.authPassword.value;
-    if (!email || !password) { alert('Informe email e senha'); return; }
-    const { error } = await client.auth.signInWithPassword({ email, password });
-    if (error) { alert('Erro ao entrar'); console.error(error); return; }
-    await refreshAuthUI();
-    await gotoMonth(currentMonth);
-  });
-
-  // els.signupBtn.addEventListener('click', async () => {
-    const email = els.authEmail.value.trim();
-    const password = els.authPassword.value;
-    if (!email || !password) { alert('Informe email e senha'); return; }
-    const { error } = await client.auth.signUp({ email, password });
-    if (error) { alert('Erro ao cadastrar'); console.error(error); return; }
-    alert('Cadastro feito! Verifique seu email para confirmar.');
-  });
-
-  els.logoutBtn.addEventListener('click', async () => {
-    await client.auth.signOut();
-    await refreshAuthUI();
-    eventsCache.clear();
-    renderMonth(currentMonth);
-  });
-
-  // Supabase auth state changes
-  client.auth.onAuthStateChange(async (_event, _session) => {
-    await refreshAuthUI();
-    await gotoMonth(currentMonth);
-  });
-
-  // UI events
+    // UI events
   els.prevMonthBtn.addEventListener('click', () => {
     const prev = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
     if (inRangeMonth(prev)) gotoMonth(prev);
