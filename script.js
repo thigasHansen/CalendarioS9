@@ -318,11 +318,12 @@
     if (value < 0) { alert('Valor deve ser positivo'); return; }
 
     const payload = {
-      name,
-      value,
-      description: description.length ? description : null,
-      color: color,
-    };
+    name,
+    value,
+    description: description.length ? description : null,
+    color: color,
+    event_date: toISODate(selectedDate),
+  };
 
     if (!id) {
       // Insert for selected date
